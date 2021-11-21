@@ -22,7 +22,8 @@ namespace JVConsole
         [Verb("jv")]
         public class JvOptions
         {
-            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html
+            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
+
 option = 1
 TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING
 
@@ -30,12 +31,12 @@ option = 2
 TOKU,RACE,TCOV,RCOV,SNAP
 
 option = 3,4
-TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING
-")]
+TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING")]
             public string Dataspec { get; set; }
 
 
-            [Option("fromdate", Required = false, Default = "20211101000000", HelpText = "[jv] fromdate. YYYYMMDDhhmmss or YYYYMMDDhhmmss-YYYYMMDDhhmmss. e.g. 20181001000000")]
+            [Option("fromdate", Required = false, Default = "20211101000000", HelpText = @"fromdate. YYYYMMDDhhmmss or YYYYMMDDhhmmss-YYYYMMDDhhmmss.
+e.g. 20181001000000")]
             public string Fromdate { get; set; }
 
             [Option("option", Required = false, HelpText = "1:通常データ, 2:今週データ, 3:セットアップデータ, 4:ダイアログ無しセットアップデータ")]
@@ -46,7 +47,10 @@ TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING
         [Verb("jvrt")]
         public class JvrtOptions
         {
-            [Option("dataspec", Required = false, HelpText = "dataspec. see http://jra-van.jp/dlb/sdv/sdk.html")]
+            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
+
+
+")]
             public string Dataspec { get; set; }
 
             [Option("key", Required = false, HelpText = @"該当データを取得するための要求キー
