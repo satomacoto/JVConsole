@@ -77,8 +77,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
         static void RunJvOptions(JvOptions opts)
         {
-            // jv --dataspec RACE --option 2
-
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVInit("UNKNOWN");
 
@@ -103,9 +101,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
         static void RunJvrtOptions(JvrtOptions opts)
         {
             var jvLink = new JVDTLabLib.JVLink();
-            // jv --dataspec RACE --option 2
-            jvLink.JVInit("UNKNOWN");
-
             jvLink.JVInit("UNKNOWN");
 
             if (string.IsNullOrWhiteSpace(opts.Dataspec))
