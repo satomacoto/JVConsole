@@ -50,10 +50,7 @@ e.g. 20181001000000")]
             [Option("output", Default = "json", HelpText = "Specify output format. `json` or `raw`")]
             public string Output { get; set; }
 
-            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
-
-
-")]
+            [Option("dataspec", Required = false, HelpText = "dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48")]
             public string Dataspec { get; set; }
 
             [Option("key", Required = false, HelpText = @"該当データを取得するための要求キー
