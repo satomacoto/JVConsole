@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using CommandLine;
+﻿using CommandLine;
 using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using static JVData_Struct;
 
 
@@ -22,6 +18,10 @@ namespace JVConsole
         [Verb("jv")]
         public class JvOptions
         {
+            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `raw`")]
+            public string Output { get; set; }
+
+
             [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 option = 1
@@ -47,6 +47,9 @@ e.g. 20181001000000")]
         [Verb("jvrt")]
         public class JvrtOptions
         {
+            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `raw`")]
+            public string Output { get; set; }
+
             [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 
@@ -98,7 +101,15 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
 
             JVOpen(jvLink, opts.Dataspec, opts.Fromdate, opts.Option);
-            JVRead(jvLink);
+
+            if (opts.Output == "raw")
+            {
+                JVReadToRaw(jvLink);
+            }
+            else
+            {
+                JVReadToJson(jvLink);
+            }
             jvLink.JVClose();
         }
 
@@ -116,7 +127,14 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 throw new Exception("keyを指定してください");
             }
             JVRTOpen(jvLink, opts.Dataspec, opts.Key);
-            JVRead(jvLink);
+            if (opts.Output == "raw")
+            {
+                JVReadToRaw(jvLink);
+            }
+            else
+            {
+                JVReadToJson(jvLink);
+            }
             jvLink.JVClose();
         }
 
@@ -127,6 +145,11 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
         class OpenSpec
         {
+            public string OpenType { get; set; }
+            public string DataSpec { get; set; }
+            public string FromDate { get; set; }
+            public int Option { get; set; }
+            public string Key { get; set; }
             public int ReadCount { get; set; }
             public int DownloadCount { get; set; }
             public string LastFileTimesatmp { get; set; }
@@ -140,7 +163,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var strLastFileTimestamp = "";  // JVOpen: 最新ファイルのタイムスタンプ
             jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
 
-            var openspec = new OpenSpec() { ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimesatmp = strLastFileTimestamp };
+            var openspec = new OpenSpec() { OpenType = "JVOpen", DataSpec = dataspec, FromDate = fromdate, Option = option, ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimesatmp = strLastFileTimestamp };
             Console.WriteLine(
                 JsonConvert.SerializeObject(openspec)
             );
@@ -149,9 +172,59 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
         static void JVRTOpen(JVDTLabLib.JVLink jvLink, string dataspec, string key)
         {
             jvLink.JVRTOpen(dataspec, key);
+            var openspec = new OpenSpec() { OpenType = "JVRTOpen", DataSpec = dataspec, Key = key };
+            Console.WriteLine(
+                JsonConvert.SerializeObject(openspec)
+            );
         }
 
-        static void JVRead(JVDTLabLib.JVLink jvLink)
+        static void JVReadToRaw(JVDTLabLib.JVLink jvLink)
+        {
+            var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
+            var nNameSize = 256;                            // JVRead: ファイル名サイズ
+            var strBuff = new string('\0', nBuffSize);      // JVRead: データ格納バッファ
+            var strFileName = new string('\0', nNameSize);  // JVRead: 読み込み中ファイル名
+
+            var errorMessage = "";
+
+            bool flg_exit = false;
+            do
+            {
+                switch (jvLink.JVRead(out strBuff, out nBuffSize, out strFileName))
+                {
+                    case 0: // 全ファイル読み込み終了
+                        flg_exit = true;
+                        break;
+                    case -1: // ファイル切り替わり
+                        break;
+                    case -3: // ダウンロード中
+                        break;
+                    case -201: // JVInit されてない
+                        errorMessage = "JVInit が行われていません。";
+                        flg_exit = true;
+                        break;
+                    case -203: // JVOpen されてない
+                        errorMessage = "JVOpen が行われていません。";
+                        flg_exit = true;
+                        break;
+                    case -503: // ファイルがない
+                        errorMessage = strFileName + "が存在しません。";
+                        flg_exit = true;
+                        break;
+                    case int ret when ret > 0:
+                        Console.WriteLine(strBuff);
+                        break;
+                }
+            }
+            while (!flg_exit);
+
+            if (errorMessage != "")
+            {
+                throw new Exception(errorMessage);
+            }
+        }
+
+        static void JVReadToJson(JVDTLabLib.JVLink jvLink)
         {
             var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
             var nNameSize = 256;                            // JVRead: ファイル名サイズ

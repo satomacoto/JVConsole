@@ -327,7 +327,7 @@ public static class JVData_Struct
             FukaSyokinSyogai = MidB2S(ref bBuff, 35, 10);
             ChakuKaisuHeichi.SetDataB(MidB2B(ref bBuff, 45, 36));
             ChakuKaisuSyogai.SetDataB(MidB2B(ref bBuff, 81, 36));
-            
+
             for (i = 0; i < 20; i++)
             {
                 ChakuKaisuJyo[i].SetDataB(MidB2B(ref bBuff, 117 + (36 * i), 36));
@@ -429,7 +429,7 @@ public static class JVData_Struct
         public void SetDataB(byte[] bBuff)
         {
             Initialize();
-            
+
             for (int i = 0; i < 6; i++)
             {
                 ChakuKaisu[i] = MidB2S(ref bBuff, 1 + (3 * i), 3);
@@ -544,7 +544,7 @@ public static class JVData_Struct
             SyubetuCD = MidB2S(ref bBuff, 1, 2);
             KigoCD = MidB2S(ref bBuff, 3, 3);
             JyuryoCD = MidB2S(ref bBuff, 6, 1);
-            
+
             for (int i = 0; i < 5; i++)
             {
                 JyokenCD[i] = MidB2S(ref bBuff, 7 + (3 * i), 3);
@@ -3612,8 +3612,8 @@ public static class JVData_Struct
     {
         public string Umaban;     // 馬番
         public string TMScore;    // 予測スコア
-        
-        
+
+
         // データセット
         public void SetDataB(byte[] bBuff)
         {
@@ -3688,8 +3688,8 @@ public static class JVData_Struct
     public struct WF_YUKO_HYO_INFO
     {
         public string Yuko_Hyo;     // 有効票数
-        
-        
+
+
         // データセット
         public void SetDataB(byte[] bBuff)
         {
@@ -3705,8 +3705,8 @@ public static class JVData_Struct
         public string Kumiban;      // 組番
         public string Pay;          // 重勝式払戻金
         public string Tekichu_Hyo;  // 的中票数
-        
-        
+
+
         // データセット
         public void SetDataB(byte[] bBuff)
         {
@@ -3771,7 +3771,7 @@ public static class JVData_Struct
             TekichunashiFlag = MidB2S(ref bBuff, 136, 1);
             COShoki = MidB2S(ref bBuff, 137, 15);
             COZanDaka = MidB2S(ref bBuff, 152, 15);
-            
+
             for (int i = 0; i < 243; i++)
             {
                 WFPayInfo[i].SetDataB(MidB2B(ref bBuff, 167 + (29 * i), 29));
