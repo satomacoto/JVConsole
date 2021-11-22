@@ -18,7 +18,7 @@ namespace JVConsole
         [Verb("jv")]
         public class JvOptions
         {
-            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `raw`")]
+            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `txt`")]
             public string Output { get; set; }
 
 
@@ -47,7 +47,7 @@ e.g. 20181001000000")]
         [Verb("jvrt")]
         public class JvrtOptions
         {
-            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `raw`")]
+            [Option("output", Default = "json", HelpText = "Specify output format. `json` or `txt`")]
             public string Output { get; set; }
 
             [Option("dataspec", Required = false, HelpText = "dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48")]
@@ -99,9 +99,9 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
             JVOpen(jvLink, opts.Dataspec, opts.Fromdate, opts.Option);
 
-            if (opts.Output == "raw")
+            if (opts.Output == "txt")
             {
-                JVReadToRaw(jvLink);
+                JVReadToTxt(jvLink);
             }
             else
             {
@@ -126,7 +126,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             JVRTOpen(jvLink, opts.Dataspec, opts.Key);
             if (opts.Output == "raw")
             {
-                JVReadToRaw(jvLink);
+                JVReadToTxt(jvLink);
             }
             else
             {
@@ -175,7 +175,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             );
         }
 
-        static void JVReadToRaw(JVDTLabLib.JVLink jvLink)
+        static void JVReadToTxt(JVDTLabLib.JVLink jvLink)
         {
             var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
             var nNameSize = 256;                            // JVRead: ファイル名サイズ
