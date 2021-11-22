@@ -50,7 +50,26 @@ e.g. 20181001000000")]
             [Option("output", Default = "json", HelpText = "Specify output format. `json` or `txt`")]
             public string Output { get; set; }
 
-            [Option("dataspec", Required = false, HelpText = "dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48")]
+            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
+
+0B12: 速報レース情報(成績確定後) 開催日単位またはレース毎
+0B15: 速報レース情報(出走馬名表～） 開催日単位またはレース毎
+0B30: 速報オッズ(全賭式) レース毎
+0B31: 速報オッズ（単複枠） レース毎
+0B32: 速報オッズ（馬連） レース毎
+0B33: 速報オッズ（ワイド） レース毎
+0B34: 速報オッズ（馬単） レース毎
+0B35: 速報オッズ（３連複） レース毎
+0B36: 速報オッズ（３連単） レース毎
+0B20: 速報票数(全賭式) レース毎
+0B11: 速報馬体重 開催日単位またはレース毎
+0B14: 速報開催情報(一括) 開催日単位
+0B16: 速報開催情報(指定) 指定された変更情報単位
+0B13: 速報タイム型データマイニング予想 開催日単位またはレース毎
+0B17: 速報対戦型データマイニング予想 開催日単位またはレース毎
+0B41: 時系列オッズ（単複枠） レース毎（該当レースの複数時間帯のオッズ）
+0B42: 時系列オッズ（馬連） レース毎（該当レースの複数時間帯のオッズ）
+0B51: 速報重勝式(WIN5) 重勝式開催毎")]
             public string Dataspec { get; set; }
 
             [Option("key", Required = false, HelpText = @"該当データを取得するための要求キー
