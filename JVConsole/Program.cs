@@ -100,9 +100,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
         static void RunJvOptions(JvOptions opts)
         {
-            var jvLink = new JVDTLabLib.JVLink();
-            jvLink.JVInit("UNKNOWN");
-
             if (string.IsNullOrWhiteSpace(opts.Fromdate))
             {
                 throw new Exception("fromdateを指定してください");
@@ -112,16 +109,16 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 throw new Exception("optionは1,2,3,4のいずれかを指定してください");
             }
 
+            var jvLink = new JVDTLabLib.JVLink();
+            jvLink.JVInit("UNKNOWN");
             foreach (var dataspec in opts.Dataspec)
             {
-                JVOpen(jvLink, dataspec, opts.Fromdate, opts.Option, opts.Output);
+                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.Output);
             }
         }
 
         static void RunJvrtOptions(JvrtOptions opts)
         {
-            var jvLink = new JVDTLabLib.JVLink();
-            jvLink.JVInit("UNKNOWN");
 
             if (string.IsNullOrWhiteSpace(opts.Dataspec))
             {
@@ -131,16 +128,9 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             {
                 throw new Exception("keyを指定してください");
             }
-            JVRTOpen(jvLink, opts.Dataspec, opts.Key);
-            if (opts.Output == "raw")
-            {
-                JVReadToTxt(jvLink);
-            }
-            else
-            {
-                JVReadToJson(jvLink);
-            }
-            jvLink.JVClose();
+            var jvLink = new JVDTLabLib.JVLink();
+            jvLink.JVInit("UNKNOWN");
+            RunJVRT(jvLink, opts.Dataspec, opts.Key, opts.Output);
         }
 
         static void HandleParseError(IEnumerable<Error> errs)
@@ -160,7 +150,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             public string LastFileTimesatmp { get; set; }
         }
 
-        static void JVOpen(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output)
+        static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output)
         {
 
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
@@ -184,13 +174,22 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVClose();
         }
 
-        static void JVRTOpen(JVDTLabLib.JVLink jvLink, string dataspec, string key)
+        static void RunJVRT(JVDTLabLib.JVLink jvLink, string dataspec, string key, string output)
         {
             jvLink.JVRTOpen(dataspec, key);
             var openspec = new OpenSpec() { OpenType = "JVRTOpen", DataSpec = dataspec, Key = key };
             Console.WriteLine(
                 JsonConvert.SerializeObject(openspec)
             );
+            if (output == "raw")
+            {
+                JVReadToTxt(jvLink);
+            }
+            else
+            {
+                JVReadToJson(jvLink);
+            }
+            jvLink.JVClose();
         }
 
         static void JVReadToTxt(JVDTLabLib.JVLink jvLink)
@@ -227,16 +226,16 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         flg_exit = true;
                         break;
                     case int ret when ret > 0:
-                        Console.WriteLine(strBuff);
+                        Console.Write(strBuff);
                         break;
                 }
             }
             while (!flg_exit);
 
-            if (errorMessage != "")
-            {
-                throw new Exception(errorMessage);
-            }
+            //if (errorMessage != "")
+            //{
+            //    throw new Exception(errorMessage);
+            //}
         }
 
         static void JVReadToJson(JVDTLabLib.JVLink jvLink)
@@ -474,10 +473,10 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
             while (!flg_exit);
 
-            if (errorMessage != "")
-            {
-                throw new Exception(errorMessage);
-            }
+            //if (errorMessage != "")
+            //{
+            //    throw new Exception(errorMessage);
+            //}
         }
     }
 }
