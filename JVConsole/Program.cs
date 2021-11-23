@@ -22,7 +22,7 @@ namespace JVConsole
             public string Output { get; set; }
 
 
-            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
+            [Option("dataspec", Required = true, Separator = ',', HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 option = 1
 TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING
@@ -32,14 +32,14 @@ TOKU,RACE,TCOV,RCOV,SNAP
 
 option = 3,4
 TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING")]
-            public string Dataspec { get; set; }
+            public IEnumerable<string> Dataspec { get; set; }
 
 
             [Option("fromdate", Required = false, Default = "20211101000000", HelpText = @"fromdate. YYYYMMDDhhmmss or YYYYMMDDhhmmss-YYYYMMDDhhmmss.
 e.g. 20181001000000")]
             public string Fromdate { get; set; }
 
-            [Option("option", Required = false, HelpText = "1:通常データ, 2:今週データ, 3:セットアップデータ, 4:ダイアログ無しセットアップデータ")]
+            [Option("option", Required = true, HelpText = "1:通常データ, 2:今週データ, 3:セットアップデータ, 4:ダイアログ無しセットアップデータ")]
             public int Option { get; set; }
         }
 
@@ -50,7 +50,7 @@ e.g. 20181001000000")]
             [Option("output", Default = "json", HelpText = "Specify output format. `json` or `txt`")]
             public string Output { get; set; }
 
-            [Option("dataspec", Required = false, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
+            [Option("dataspec", Required = true, HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 0B12 速報レース情報（成績確定後） 開催日単位またはレース毎
 0B15 速報レース情報（出走馬名表～） 開催日単位またはレース毎
@@ -72,7 +72,7 @@ e.g. 20181001000000")]
 0B51 速報重勝式(WIN5) 重勝式開催毎")]
             public string Dataspec { get; set; }
 
-            [Option("key", Required = false, HelpText = @"該当データを取得するための要求キー
+            [Option("key", Required = true, HelpText = @"該当データを取得するための要求キー
 レース毎の場合`YYYYMMDDJJKKHHRR` または `YYYYMMDDJJRR`
 開催日単位の場合 `YYYYMMDD`
 YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日次, RR:レース番号")]
@@ -103,10 +103,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVInit("UNKNOWN");
 
-            if (string.IsNullOrWhiteSpace(opts.Dataspec))
-            {
-                throw new Exception("dataspecを指定してください");
-            }
             if (string.IsNullOrWhiteSpace(opts.Fromdate))
             {
                 throw new Exception("fromdateを指定してください");
@@ -116,17 +112,10 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 throw new Exception("optionは1,2,3,4のいずれかを指定してください");
             }
 
-            JVOpen(jvLink, opts.Dataspec, opts.Fromdate, opts.Option);
-
-            if (opts.Output == "txt")
+            foreach (var dataspec in opts.Dataspec)
             {
-                JVReadToTxt(jvLink);
+                JVOpen(jvLink, dataspec, opts.Fromdate, opts.Option, opts.Output);
             }
-            else
-            {
-                JVReadToJson(jvLink);
-            }
-            jvLink.JVClose();
         }
 
         static void RunJvrtOptions(JvrtOptions opts)
@@ -171,7 +160,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             public string LastFileTimesatmp { get; set; }
         }
 
-        static void JVOpen(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option)
+        static void JVOpen(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output)
         {
 
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
@@ -183,6 +172,16 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             Console.WriteLine(
                 JsonConvert.SerializeObject(openspec)
             );
+
+            if (output == "txt")
+            {
+                JVReadToTxt(jvLink);
+            }
+            else
+            {
+                JVReadToJson(jvLink);
+            }
+            jvLink.JVClose();
         }
 
         static void JVRTOpen(JVDTLabLib.JVLink jvLink, string dataspec, string key)
