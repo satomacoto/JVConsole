@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using static JVData_Struct;
 
 
@@ -41,6 +42,9 @@ e.g. 20181001000000")]
 
             [Option("option", Required = true, HelpText = "1:通常データ, 2:今週データ, 3:セットアップデータ, 4:ダイアログ無しセットアップデータ")]
             public int Option { get; set; }
+
+            [Option("recordspec", Default = null, Separator = ',')]
+            public IEnumerable<string> Recordspec { get; set; }
         }
 
 
@@ -113,7 +117,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVInit("UNKNOWN");
             foreach (var dataspec in opts.Dataspec)
             {
-                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.Output);
+                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.Output, opts.Recordspec);
             }
         }
 
@@ -150,7 +154,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             public string LastFileTimestamp { get; set; }
         }
 
-        static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output)
+        static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output, IEnumerable<string> recordspec)
         {
 
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
@@ -165,11 +169,11 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
             if (output == "txt")
             {
-                JVReadToTxt(jvLink);
+                JVReadToTxt(jvLink, recordspec);
             }
             else
             {
-                JVReadToJson(jvLink);
+                JVReadToJson(jvLink, recordspec);
             }
             jvLink.JVClose();
         }
@@ -192,7 +196,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVClose();
         }
 
-        static void JVReadToTxt(JVDTLabLib.JVLink jvLink)
+        static void JVReadToTxt(JVDTLabLib.JVLink jvLink, IEnumerable<string> recordspec = null)
         {
             var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
             var nNameSize = 256;                            // JVRead: ファイル名サイズ
@@ -232,13 +236,13 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
             while (!flg_exit);
 
-            //if (errorMessage != "")
-            //{
-            //    throw new Exception(errorMessage);
-            //}
+            if (errorMessage != "")
+            {
+                Console.Error.WriteLine(errorMessage);
+            }
         }
 
-        static void JVReadToJson(JVDTLabLib.JVLink jvLink)
+        static void JVReadToJson(JVDTLabLib.JVLink jvLink, IEnumerable<string> recordspec = null)
         {
             var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
             var nNameSize = 256;                            // JVRead: ファイル名サイズ
@@ -314,6 +318,13 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         break;
                     case int ret when ret > 0:
                         var dataKubun = strBuff.Substring(0, 2);
+
+                        // レコード種別IDのチェック
+                        if (recordspec != null && !recordspec.Contains(dataKubun))
+                        {
+                            break;
+                        }
+
                         switch (dataKubun)
                         {
                             case "AV":
@@ -473,10 +484,12 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
             while (!flg_exit);
 
-            //if (errorMessage != "")
-            //{
-            //    throw new Exception(errorMessage);
-            //}
+            if (errorMessage != "")
+            {
+                Console.Error.WriteLine(errorMessage);
+            }
+
+            Console.ReadLine();
         }
     }
 }
