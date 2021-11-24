@@ -147,7 +147,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             public string Key { get; set; }
             public int ReadCount { get; set; }
             public int DownloadCount { get; set; }
-            public string LastFileTimesatmp { get; set; }
+            public string LastFileTimestamp { get; set; }
         }
 
         static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string output)
@@ -158,7 +158,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var strLastFileTimestamp = "";  // JVOpen: 最新ファイルのタイムスタンプ
             jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
 
-            var openspec = new OpenSpec() { OpenType = "JVOpen", DataSpec = dataspec, FromDate = fromdate, Option = option, ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimesatmp = strLastFileTimestamp };
+            var openspec = new OpenSpec() { OpenType = "JVOpen", DataSpec = dataspec, FromDate = fromdate, Option = option, ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimestamp = strLastFileTimestamp };
             Console.WriteLine(
                 JsonConvert.SerializeObject(openspec)
             );
