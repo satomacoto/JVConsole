@@ -6,6 +6,9 @@ using static JVData_Struct;
 
 namespace JVParser
 {
+
+    class OutputFileAlreadyExistsException : Exception { }
+
     // Class to manage mutliple stream writers
     class RecordSpecStreamWriterManager
     {
@@ -26,8 +29,7 @@ namespace JVParser
             this.fileNamePrefix = fileNamePrefix;
         }
 
-        // Destructor
-        ~RecordSpecStreamWriterManager()
+        public void Close()
         {
             foreach (KeyValuePair<string, StreamWriter> streamWriter in streamWriters)
             {
@@ -47,7 +49,12 @@ namespace JVParser
         {
             if (!streamWriters.ContainsKey(recordSpecName))
             {
-                streamWriters.Add(recordSpecName, new StreamWriter(GetOutputPath(recordSpecName)));
+                var outputPath = GetOutputPath(recordSpecName);
+                if (File.Exists(outputPath))
+                {
+                    throw new OutputFileAlreadyExistsException();
+                }
+                streamWriters.Add(recordSpecName, new StreamWriter(outputPath));
             }
             return streamWriters[recordSpecName];
         }
@@ -63,7 +70,6 @@ namespace JVParser
         {
             GetStreamWriter(recordSpecName).WriteLine(text);
         }
-
     }
 
     class JVJson
@@ -94,10 +100,10 @@ namespace JVParser
             string outputDir = args[1];
 
             // Get input file name without extension
-            string inputFileName = Path.GetFileNameWithoutExtension(inputFilePath);
+            string fileNamePrefix = Path.GetFileNameWithoutExtension(inputFilePath);
 
             // Initalize the recordspec stream writer manager
-            RecordSpecStreamWriterManager recordSpecStreamWriterManager = new RecordSpecStreamWriterManager(outputDir, inputFileName);
+            RecordSpecStreamWriterManager recordSpecStreamWriterManager = new RecordSpecStreamWriterManager(outputDir, fileNamePrefix);
 
             string? line;
             JVJson? jvJson;
@@ -125,6 +131,9 @@ namespace JVParser
                         Console.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
                     }
                 }
+                Console.WriteLine();
+
+                recordSpecStreamWriterManager.Close();
             }
         }
 
