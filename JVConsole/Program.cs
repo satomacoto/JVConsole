@@ -114,6 +114,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             {
                 RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir);
             }
+            jvLink.JVClose();
         }
 
         static void RunJvrtOptions(JvrtOptions opts)
@@ -128,6 +129,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             {
                 RunJVRT(jvLink, dataspec, opts.Key, opts.OutputDir);
             }
+            jvLink.JVClose();
         }
 
         static void HandleParseError(IEnumerable<Error> errs)
@@ -135,24 +137,20 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             //handle errors
         }
 
-        class OpenSpec
-        {
-            public string OpenType { get; set; }
-            public string DataSpec { get; set; }
-            public string FromDate { get; set; }
-            public int Option { get; set; }
-            public string Key { get; set; }
-            public int ReadCount { get; set; }
-            public int DownloadCount { get; set; }
-            public string LastFileTimestamp { get; set; }
-        }
 
         static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string outputDir)
         {
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
             var nDownloadCount = 0;         // JVOpen: 総ダウンロードファイル数
             var strLastFileTimestamp = "";  // JVOpen: 最新ファイルのタイムスタンプ
-            jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
+
+            var openStatus = jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
+
+            if (openStatus != 0)
+            {
+                Console.Error.WriteLine($"Failed to open. status: {openStatus}");
+                return;
+            }
 
             Console.WriteLine("Data spec: " + dataspec);
             Console.WriteLine("Total read count: " + nReadCount.ToString());
@@ -163,13 +161,18 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             streamWriter.WriteLine("JV DATASPEC:" + dataspec + " FROMDATE:" + fromdate + " LASTFILETIMESTAMP:" + strLastFileTimestamp);
             JVReadToTxt(jvLink, streamWriter);
 
-            jvLink.JVClose();
             streamWriter.Close();
         }
 
         static void RunJVRT(JVDTLabLib.JVLink jvLink, string dataspec, string key, string outputDir)
         {
-            jvLink.JVRTOpen(dataspec, key);
+            var openStatus = jvLink.JVRTOpen(dataspec, key);
+
+            if (openStatus != 0)
+            {
+                Console.Error.WriteLine($"Failed to open. status: {openStatus}");
+                return;
+            }
 
             var outputPath = Path.Combine(outputDir, "JVRT-" + dataspec + "-" + key + ".txt");
             var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
@@ -177,7 +180,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             streamWriter.WriteLine("JVRT DATASPEC:" + dataspec + " KEY:" + key);
             JVReadToTxt(jvLink, streamWriter);
 
-            jvLink.JVClose();
             streamWriter.Close();
         }
 
@@ -228,7 +230,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             if (errorMessage != "")
             {
                 Console.Error.WriteLine(errorMessage);
-                throw new Exception(errorMessage);
             }
         }
     }
