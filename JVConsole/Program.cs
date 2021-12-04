@@ -1,10 +1,7 @@
 ﻿using CommandLine;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using static JVData_Struct;
 
 
 namespace JVConsole
