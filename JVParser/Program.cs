@@ -215,9 +215,9 @@ namespace JVParser
                     h1.SetDataB(ref line);
                     jsonObject = JObject.FromObject(h1);
                     break;
-                case "H6":
-                    h6.SetDataB(ref line);
-                    jsonObject = JObject.FromObject(h6);
+                //case "H6":
+                //    h6.SetDataB(ref line);
+                //    jsonObject = JObject.FromObject(h6);
                     break;
                 case "HC":
                     hc.SetDataB(ref line);
@@ -271,10 +271,10 @@ namespace JVParser
                     o5.SetDataB(ref line);
                     jsonObject = JObject.FromObject(o5);
                     break;
-                case "O6":
-                    o6.SetDataB(ref line);
-                    jsonObject = JObject.FromObject(o6);
-                    break;
+                //case "O6":
+                //    o6.SetDataB(ref line);
+                //    jsonObject = JObject.FromObject(o6);
+                //    break;
                 case "RA":
                     ra.SetDataB(ref line);
                     jsonObject = JObject.FromObject(ra);
