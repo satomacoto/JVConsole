@@ -162,17 +162,18 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var strLastFileTimestamp = "";  // JVOpen: 最新ファイルのタイムスタンプ
             jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
 
-            var openspec = new OpenSpec() { OpenType = "JVOpen", DataSpec = dataspec, FromDate = fromdate, Option = option, ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimestamp = strLastFileTimestamp };
-            Console.WriteLine(
-                JsonConvert.SerializeObject(openspec)
-            );
 
             if (output == "txt")
             {
+                Console.WriteLine("LASTFILETIMESTAMP" + dataspec + strLastFileTimestamp);
                 JVReadToTxt(jvLink, recordspec);
             }
             else
             {
+                var openspec = new OpenSpec() { OpenType = "JVOpen", DataSpec = dataspec, FromDate = fromdate, Option = option, ReadCount = nReadCount, DownloadCount = nDownloadCount, LastFileTimestamp = strLastFileTimestamp };
+                Console.WriteLine(
+                    JsonConvert.SerializeObject(openspec)
+                );
                 JVReadToJson(jvLink, recordspec);
             }
             jvLink.JVClose();
@@ -239,6 +240,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             if (errorMessage != "")
             {
                 Console.Error.WriteLine(errorMessage);
+                throw new Exception(errorMessage);
             }
         }
 
