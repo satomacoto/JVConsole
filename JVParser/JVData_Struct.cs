@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 
 /// <summary>
 /// JRA-VAN Data Lab. JV-Data構造体
