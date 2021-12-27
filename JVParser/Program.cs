@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using System.Text.RegularExpressions;
+using CommandLine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using static JVData_Struct;
@@ -84,20 +84,35 @@ namespace JVParser
         }
     }
 
+    class Options
+    {
+        [Option("inputPath", Required = true, HelpText = @"Path to txt file.")]
+        public string InputPath { get; set; }
+
+        [Option("outputDir", Required = true, HelpText = @"Path to jsonl directory")]
+        public string OutputDir { get; set; }
+
+    }
 
 
     class Program
     {
         static void Main(string[] args)
         {
+            Parser.Default.ParseArguments<Options>(args).WithParsed(RunOptions).WithNotParsed(HandleParseError);
+        }
+
+        static void RunOptions(Options opts)
+        {
+
             // To use Shift-JIS encoding, use the following:
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             // Get the input file path
-            string inputFilePath = args[0];
+            string inputFilePath = opts.InputPath;
 
             // Get output directory from args
-            string outputDir = args[1];
+            string outputDir = opts.OutputDir;
 
             // Get input file name without extension
             string fileNamePrefix = Path.GetFileNameWithoutExtension(inputFilePath);
@@ -135,6 +150,11 @@ namespace JVParser
 
                 recordSpecStreamWriterManager.Close();
             }
+        }
+
+        static void HandleParseError(IEnumerable<Error> errs)
+        {
+            //handle errors
         }
 
         static JVJson? JVReadToJson(string line)
@@ -227,7 +247,7 @@ namespace JVParser
                 //case "H6":
                 //    h6.SetDataB(ref line);
                 //    jsonObject = JObject.FromObject(h6);
-                    break;
+                //    break;
                 case "HC":
                     hc.SetDataB(ref line);
                     jsonObject = JObject.FromObject(hc);

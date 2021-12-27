@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 
 
-namespace JVConsole
+namespace JVDownloader
 {
     internal class Program
     {
@@ -125,7 +125,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVInit("UNKNOWN");
-            foreach(var dataspec in opts.Dataspec)
+            foreach (var dataspec in opts.Dataspec)
             {
                 RunJVRT(jvLink, dataspec, opts.Key, opts.OutputDir);
             }

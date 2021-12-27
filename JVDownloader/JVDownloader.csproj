@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{76DD3EA6-0A74-461A-AD51-D89160B17C35}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>JVConsole</RootNamespace>
-    <AssemblyName>JVConsole</AssemblyName>
+    <RootNamespace>JVDownloader</RootNamespace>
+    <AssemblyName>JVDownloader</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
