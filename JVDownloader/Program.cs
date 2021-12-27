@@ -68,7 +68,7 @@ e.g. 20181001000000")]
             public IEnumerable<string> Dataspec { get; set; }
 
             [Option("key", Required = true, HelpText = @"該当データを取得するための要求キー
-レース毎の場合`YYYYMMDDJJKKHHRR` または `YYYYMMDDJJRR`
+レース毎の場合 `YYYYMMDDJJKKHHRR` または `YYYYMMDDJJRR`
 開催日単位の場合 `YYYYMMDD`
 YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日次, RR:レース番号")]
             public string Key { get; set; }
