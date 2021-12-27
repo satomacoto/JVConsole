@@ -89,7 +89,7 @@ namespace JVParser
         [Option("inputPath", Required = true, HelpText = @"Path to txt file.")]
         public string InputPath { get; set; }
 
-        [Option("outputDir", Required = true, HelpText = @"Path to jsonl directory")]
+        [Option("outputDir", Required = true, HelpText = @"Path to jsonl directory.")]
         public string OutputDir { get; set; }
 
     }

@@ -8,13 +8,13 @@ namespace JVDownloader
 {
     internal class Program
     {
-        [Verb("setup")]
+        [Verb("setup", HelpText = "設定ダイアログの表示")]
         public class SetupOptions
         {
 
         }
 
-        [Verb("jv")]
+        [Verb("jv", HelpText = "蓄積系データのダウンロード")]
         public class JvOptions
         {
             [Option("dataspec", Required = true, Separator = ',', HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
@@ -42,7 +42,7 @@ e.g. 20181001000000")]
         }
 
 
-        [Verb("jvrt")]
+        [Verb("jvrt", HelpText = "速報系データのダウンロード")]
         public class JvrtOptions
         {
             [Option("dataspec", Required = true, Separator = ',', HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
