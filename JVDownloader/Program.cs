@@ -70,7 +70,9 @@ e.g. 20181001000000")]
             [Option("key", Required = true, HelpText = @"該当データを取得するための要求キー
 レース毎の場合 `YYYYMMDDJJKKHHRR` または `YYYYMMDDJJRR`
 開催日単位の場合 `YYYYMMDD`
-YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日次, RR:レース番号")]
+YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日次, RR:レース番号
+
+場コード: 01札,02函,03福,04新,05東,06中,07名,08京,09阪,10小")]
             public string Key { get; set; }
 
             [Option("outputDir", Required = false, Default = ".", HelpText = @"output directory")]
@@ -152,14 +154,16 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 return;
             }
 
-            Console.WriteLine("Data spec: " + dataspec);
-            Console.WriteLine("Total read count: " + nReadCount.ToString());
+            Console.Error.WriteLine("Data spec: " + dataspec);
+            Console.Error.WriteLine("Total read count: " + nReadCount.ToString());
 
             var outputPath = Path.Combine(outputDir, "JV-" + dataspec + "-" + fromdate + "-" + strLastFileTimestamp + ".txt");
             var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
 
             streamWriter.WriteLine("JV DATASPEC:" + dataspec + " FROMDATE:" + fromdate + " LASTFILETIMESTAMP:" + strLastFileTimestamp);
             JVReadToTxt(jvLink, streamWriter);
+
+            Console.WriteLine(outputPath);
 
             streamWriter.Close();
         }
@@ -179,6 +183,8 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
             streamWriter.WriteLine("JVRT DATASPEC:" + dataspec + " KEY:" + key);
             JVReadToTxt(jvLink, streamWriter);
+
+            Console.WriteLine(outputPath);
 
             streamWriter.Close();
         }
@@ -203,7 +209,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         break;
                     case -1: // ファイル切り替わり
                         currentReadCount++;
-                        Console.Write("Current read count: " + currentReadCount.ToString() + "\r");
+                        Console.Error.Write("Current read count: " + currentReadCount.ToString() + "\r");
                         break;
                     case -3: // ダウンロード中
                         break;
@@ -225,7 +231,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 }
             }
             while (!flg_exit);
-            Console.WriteLine();
+            Console.Error.WriteLine();
 
             if (errorMessage != "")
             {

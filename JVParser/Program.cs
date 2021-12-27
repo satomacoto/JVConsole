@@ -70,6 +70,14 @@ namespace JVParser
         {
             GetStreamWriter(recordSpecName).WriteLine(text);
         }
+
+        public void PrintOutputPaths()
+        {
+            foreach (var writer in streamWriters.Values)
+            {
+                Console.WriteLine(((FileStream)writer.BaseStream).Name);
+            }
+        }
     }
 
     class JVJson
@@ -143,10 +151,12 @@ namespace JVParser
                     // Print progress
                     if (lineNumber % 1000 == 0)
                     {
-                        Console.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
+                        Console.Error.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
                     }
                 }
-                Console.WriteLine();
+                Console.Error.WriteLine();
+
+                recordSpecStreamWriterManager.PrintOutputPaths();
 
                 recordSpecStreamWriterManager.Close();
             }
