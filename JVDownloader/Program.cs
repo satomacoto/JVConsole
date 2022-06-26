@@ -1,5 +1,6 @@
 ﻿using CommandLine;
 using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.IO;
 
@@ -8,6 +9,8 @@ namespace JVDownloader
 {
     internal class Program
     {
+        const string Sid = "UNKNOWN";
+
         [Verb("setup", HelpText = "設定ダイアログの表示")]
         public class SetupOptions
         {
@@ -39,6 +42,9 @@ e.g. 20181001000000")]
 
             [Option("outputDir", Required = false, Default = ".", HelpText = @"output directory")]
             public string OutputDir { get; set; }
+
+            [Option("wait", Required = false, Default = 1000, HelpText = @"処理間隔 [sec]")]
+            public int Wait { get; set; }
         }
 
 
@@ -67,17 +73,20 @@ e.g. 20181001000000")]
 0B51 速報重勝式(WIN5) 重勝式開催毎")]
             public IEnumerable<string> Dataspec { get; set; }
 
-            [Option("key", Required = true, HelpText = @"該当データを取得するための要求キー
+            [Option("key", Required = true, Separator = ',', HelpText = @"該当データを取得するための要求キー
+カンマ区切りで複数指定
 レース毎の場合 `YYYYMMDDJJKKHHRR` または `YYYYMMDDJJRR`
 開催日単位の場合 `YYYYMMDD`
 YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日次, RR:レース番号
 
 場コード: 01札,02函,03福,04新,05東,06中,07名,08京,09阪,10小")]
-            public string Key { get; set; }
+            public IEnumerable<string> Key { get; set; }
 
             [Option("outputDir", Required = false, Default = ".", HelpText = @"output directory")]
             public string OutputDir { get; set; }
 
+            [Option("wait", Required = false, Default = 1000, HelpText = @"処理間隔 [sec]")]
+            public int Wait { get; set; }
         }
 
 
@@ -110,28 +119,29 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 throw new Exception("optionは1,2,3,4のいずれかを指定してください");
             }
 
+            Console.Error.WriteLine($"Start to JV. Fromdate: {opts.Fromdate}, Option: {opts.Option}");
             var jvLink = new JVDTLabLib.JVLink();
-            jvLink.JVInit("UNKNOWN");
+            jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
-                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir);
+                Console.Error.WriteLine($"JV {dataspec}");
+                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir, opts.Wait);
             }
-            jvLink.JVClose();
         }
 
         static void RunJvrtOptions(JvrtOptions opts)
         {
-            if (string.IsNullOrWhiteSpace(opts.Key))
-            {
-                throw new Exception("keyを指定してください");
-            }
+            Console.Error.WriteLine($"Start to JVRT.");
             var jvLink = new JVDTLabLib.JVLink();
-            jvLink.JVInit("UNKNOWN");
+            jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
-                RunJVRT(jvLink, dataspec, opts.Key, opts.OutputDir);
+                foreach (var key in opts.Key)
+                {
+                    Console.Error.WriteLine($"JVRT {dataspec} {key}");
+                    RunJVRT(jvLink, dataspec, key, opts.OutputDir, opts.Wait);
+                }
             }
-            jvLink.JVClose();
         }
 
         static void HandleParseError(IEnumerable<Error> errs)
@@ -140,7 +150,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
         }
 
 
-        static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string outputDir)
+        static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string outputDir, int wait = 1000)
         {
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
             var nDownloadCount = 0;         // JVOpen: 総ダウンロードファイル数
@@ -166,9 +176,12 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             Console.WriteLine(outputPath);
 
             streamWriter.Close();
+            jvLink.JVClose();
+
+            Thread.Sleep(wait);
         }
 
-        static void RunJVRT(JVDTLabLib.JVLink jvLink, string dataspec, string key, string outputDir)
+        static void RunJVRT(JVDTLabLib.JVLink jvLink, string dataspec, string key, string outputDir, int wait = 1000)
         {
             var openStatus = jvLink.JVRTOpen(dataspec, key);
 
@@ -187,6 +200,9 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             Console.WriteLine(outputPath);
 
             streamWriter.Close();
+            jvLink.JVClose();
+
+            Thread.Sleep(wait);
         }
 
         static void JVReadToTxt(JVDTLabLib.JVLink jvLink, StreamWriter streamWriter)
@@ -231,12 +247,13 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 }
             }
             while (!flg_exit);
-            Console.Error.WriteLine();
 
             if (errorMessage != "")
             {
                 Console.Error.WriteLine(errorMessage);
             }
+
+            Console.Error.WriteLine($"Finished JVReadToTxt.");
         }
     }
 }

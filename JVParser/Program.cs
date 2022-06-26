@@ -1,7 +1,7 @@
-﻿using System.Diagnostics;
-using CommandLine;
+﻿using CommandLine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 using static JVData_Struct;
 
 namespace JVParser
@@ -100,6 +100,10 @@ namespace JVParser
         [Option("outputDir", Required = true, HelpText = @"Path to jsonl directory.")]
         public string OutputDir { get; set; }
 
+        // recordSpec to skip
+        [Option("skipRecordSpec", Required = false, Separator = ',', HelpText = @"RecordSpec to skip.")]
+        public IEnumerable<string> SkipRecordSpec { get; set; }
+
     }
 
 
@@ -122,6 +126,9 @@ namespace JVParser
             // Get output directory from args
             string outputDir = opts.OutputDir;
 
+            // Get skipRecordSpec from args
+            IEnumerable<string> skipRecordSpec = opts.SkipRecordSpec;
+
             // Get input file name without extension
             string fileNamePrefix = Path.GetFileNameWithoutExtension(inputFilePath);
 
@@ -142,7 +149,7 @@ namespace JVParser
                 // read line and convert to json
                 while ((line = sr.ReadLine()) != null)
                 {
-                    if ((jvJson = JVReadToJson(line)) != null)
+                    if ((jvJson = JVReadToJson(line, skipRecordSpec)) != null)
                     {
                         recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
                     }
@@ -154,7 +161,7 @@ namespace JVParser
                         Console.Error.Write("Processed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.\r");
                     }
                 }
-                Console.Error.WriteLine();
+                Console.Error.WriteLine("Parsed " + lineNumber + " lines in " + stopwatch.ElapsedMilliseconds + " ms.");
 
                 recordSpecStreamWriterManager.PrintOutputPaths();
 
@@ -167,7 +174,7 @@ namespace JVParser
             //handle errors
         }
 
-        static JVJson? JVReadToJson(string line)
+        static JVJson? JVReadToJson(string line, IEnumerable<string> skipRecordSpec)
         {
             var av = new JV_AV_INFO();
             var bn = new JV_BN_BANUSI();
@@ -212,6 +219,12 @@ namespace JVParser
             JObject? jsonObject = null;
 
             var recordSpec = line.Substring(0, 2);
+
+            if (skipRecordSpec.Contains(recordSpec))
+            {
+                return null;
+            }
+
             switch (recordSpec)
             {
                 case "AV":
@@ -254,10 +267,10 @@ namespace JVParser
                     h1.SetDataB(ref line);
                     jsonObject = JObject.FromObject(h1);
                     break;
-                //case "H6":
-                //    h6.SetDataB(ref line);
-                //    jsonObject = JObject.FromObject(h6);
-                //    break;
+                case "H6":
+                    h6.SetDataB(ref line);
+                    jsonObject = JObject.FromObject(h6);
+                    break;
                 case "HC":
                     hc.SetDataB(ref line);
                     jsonObject = JObject.FromObject(hc);
@@ -310,10 +323,10 @@ namespace JVParser
                     o5.SetDataB(ref line);
                     jsonObject = JObject.FromObject(o5);
                     break;
-                //case "O6":
-                //    o6.SetDataB(ref line);
-                //    jsonObject = JObject.FromObject(o6);
-                //    break;
+                case "O6":
+                    o6.SetDataB(ref line);
+                    jsonObject = JObject.FromObject(o6);
+                    break;
                 case "RA":
                     ra.SetDataB(ref line);
                     jsonObject = JObject.FromObject(ra);
