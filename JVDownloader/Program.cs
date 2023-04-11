@@ -216,9 +216,12 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
             bool flg_exit = false;
             int currentReadCount = 0;
+            int readStatus = 0;
             do
             {
-                switch (jvLink.JVRead(out strBuff, out nBuffSize, out strFileName))
+                readStatus = jvLink.JVRead(out strBuff, out nBuffSize, out strFileName);
+                Console.Error.Write("Read status: " + readStatus.ToString() + "\r");
+                switch (readStatus)
                 {
                     case 0: // 全ファイル読み込み終了
                         flg_exit = true;
@@ -239,6 +242,18 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         break;
                     case -503: // ファイルがない
                         errorMessage = strFileName + "が存在しません。";
+                        flg_exit = true;
+                        break;
+                    case -402: // ダウンロードしたファイルが異常（ファイルサイズ＝０）
+                    case -403: // ダウンロードしたファイルが異常（データ内容）
+                        errorMessage = strFileName + "が開けません。削除します...";
+
+                        int flg_delete = jvLink.JVFiledelete(strFileName);
+                        if (flg_delete == 0)
+                            errorMessage += "削除に成功しました。";
+                        else
+                            errorMessage += "削除に失敗しました。";
+
                         flg_exit = true;
                         break;
                     case int ret when ret > 0:
