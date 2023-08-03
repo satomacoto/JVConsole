@@ -32,6 +32,13 @@ namespace JVParser
 
     }
 
+    internal class ErrorCode
+    {
+        public const int Success = 0;
+        public const int ErrorParsingArguments = 401;
+        public const int ErrorOutputFileAlreadyExists = 402;
+    }
+
 
     class Program
     {
@@ -77,7 +84,16 @@ namespace JVParser
                 {
                     if ((jvJson = JVReadToJson(line, skipRecordSpec)) != null)
                     {
-                        recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
+                        try
+                        {
+                            // Write to the output file
+                            recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
+                        }
+                        catch (OutputFileAlreadyExistsException e)
+                        {
+                            Console.Error.WriteLine(e.Message);
+                            Environment.Exit(ErrorCode.ErrorOutputFileAlreadyExists);
+                        }
                     }
                     lineNumber++;
 
@@ -93,11 +109,16 @@ namespace JVParser
 
                 recordSpecStreamWriterManager.Close();
             }
+
+            // Exit with success code
+            Environment.Exit(ErrorCode.Success);
         }
 
         static void HandleParseError(IEnumerable<Error> errs)
         {
-            //handle errors
+            // Handle errors
+            Console.Error.WriteLine("Error parsing arguments.");
+            Environment.Exit(ErrorCode.ErrorParsingArguments);
         }
 
         static JVJson? JVReadToJson(string line, IEnumerable<string> skipRecordSpec)

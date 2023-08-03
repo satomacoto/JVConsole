@@ -43,7 +43,7 @@
                 var outputPath = GetOutputPath(recordSpecName);
                 if (File.Exists(outputPath))
                 {
-                    throw new OutputFileAlreadyExistsException();
+                    throw new OutputFileAlreadyExistsException(outputPath);
                 }
                 streamWriters.Add(recordSpecName, new StreamWriter(outputPath));
             }
