@@ -556,6 +556,7 @@ public static class JVData_Struct
 
     #region データ構造体
 
+
     #region 1.特別登録馬
 
     /// <summary>
@@ -578,7 +579,7 @@ public static class JVData_Struct
         public string ChokyosiRyakusyo;     // 調教師名略称
         public string Futan;                // 負担重量
 
-        public string KoryuKubun;           // 交流区分
+        public string Koryu;                // 交流区分
 
 
         // データセット
@@ -593,7 +594,7 @@ public static class JVData_Struct
             ChokyosiCode = MidB2S(ref bBuff, 54, 5);
             ChokyosiRyakusyo = MidB2S(ref bBuff, 59, 8);
             Futan = MidB2S(ref bBuff, 67, 3);
-            KoryuKubun = MidB2S(ref bBuff, 70, 1);
+            Koryu = MidB2S(ref bBuff, 70, 1);
         }
     }
 
@@ -613,6 +614,7 @@ public static class JVData_Struct
         public YMD HandiDate;               // ハンデ発表日
         public string TorokuTosu;           // 登録頭数
         public TOKUUMA_INFO[] TokuUmaInfo;  // <登録馬毎情報>
+        public string crlf;                 // レコード区切
 
 
         // 配列の初期化
@@ -645,6 +647,8 @@ public static class JVData_Struct
                 TokuUmaInfo[i].SetDataB(MidB2B(ref bBuff, 656 + (70 * i), 70));
             }
 
+            crlf = MidB2S(ref bBuff, 21656, 2);
+            bBuff = null;
         }
     }
 
@@ -713,6 +717,7 @@ public static class JVData_Struct
         public CORNER_INFO[] CornerInfo;    // <コーナー通過順位>
         public string RecordUpKubun;        // レコード更新区分
 
+        public string crlf;                 // レコード区切り
 
         // 配列の初期化
 
@@ -789,6 +794,8 @@ public static class JVData_Struct
             }
 
             RecordUpKubun = MidB2S(ref bBuff, 1270, 1);
+            crlf = MidB2S(ref bBuff, 1271, 2);
+            bBuff = null;
         }
     }
 
@@ -846,7 +853,7 @@ public static class JVData_Struct
 
         public string FutanBefore;              // 変更前負担重量
 
-        public string BlinkerKubun;             // ブリンカー使用区分
+        public string Blinker;                  // ブリンカー使用区分
 
         public string reserved2;                // 予備
         public string KisyuCode;                // 騎手コード
@@ -910,6 +917,7 @@ public static class JVData_Struct
 
         public string KyakusituKubun;           // 今回レース脚質判定
 
+        public string crlf;                     // レコード区切り
 
         // 配列の初期化
 
@@ -946,7 +954,7 @@ public static class JVData_Struct
             reserved1 = MidB2S(ref bBuff, 229, 60);
             Futan = MidB2S(ref bBuff, 289, 3);
             FutanBefore = MidB2S(ref bBuff, 292, 3);
-            BlinkerKubun = MidB2S(ref bBuff, 295, 1);
+            Blinker = MidB2S(ref bBuff, 295, 1);
             reserved2 = MidB2S(ref bBuff, 296, 1);
             KisyuCode = MidB2S(ref bBuff, 297, 5);
             KisyuCodeBefore = MidB2S(ref bBuff, 302, 5);
@@ -992,6 +1000,8 @@ public static class JVData_Struct
             DMGosaM = MidB2S(ref bBuff, 547, 4);
             DMJyuni = MidB2S(ref bBuff, 551, 2);
             KyakusituKubun = MidB2S(ref bBuff, 553, 1);
+            crlf = MidB2S(ref bBuff, 554, 2);
+            bBuff = null;
         }
     }
 
@@ -1103,6 +1113,7 @@ public static class JVData_Struct
         public PAY_INFO2[] PayUmatan;       // <馬単払戻>
         public PAY_INFO3[] PaySanrenpuku;   // <3連複払戻>
         public PAY_INFO4[] PaySanrentan;    // <3連単払戻>
+        public string crlf;                 // レコード区切り
 
         // 配列の初期化
 
@@ -1199,12 +1210,14 @@ public static class JVData_Struct
                 PaySanrentan[i].SetDataB(MidB2B(ref bBuff, 604 + (19 * i), 19));
             }
 
+            crlf = MidB2S(ref bBuff, 718, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 5.票数１
+    #region 5.票数(全掛式)
 
     /// <summary>
     /// 票数情報1 単・複・枠
@@ -1303,6 +1316,7 @@ public static class JVData_Struct
         public HYO_INFO3[] HyoSanrenpuku;	// <3連複票数>
         public string[] HyoTotal;			// 票数合計
 
+        public string crlf;				    // レコード区切り
 
         // 配列の初期化
 
@@ -1387,12 +1401,11 @@ public static class JVData_Struct
                 HyoTotal[i] = MidB2S(ref bBuff, 28800 + (11 * i), 11);
             }
 
+            crlf = MidB2S(ref bBuff, 28954, 2);
+            bBuff = null;
         }
     }
 
-    #endregion
-
-    #region 6.票数6（3連単）
     public struct JV_H6_HYOSU_SANRENTAN
     {
         public RECORD_ID head;              // <レコードヘッダー>
@@ -1404,6 +1417,7 @@ public static class JVData_Struct
         public HYO_INFO4[] HyoSanrentan;    // <3連単票数>
         public string[] HyoTotal;			// 票数合計
 
+        public string crlf;				    // レコード区切り
 
         // 配列の初期化
 
@@ -1441,12 +1455,14 @@ public static class JVData_Struct
                 HyoTotal[i] = MidB2S(ref bBuff, 102867 + (11 * i), 11);
             }
 
+            crlf = MidB2S(ref bBuff, 102889, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 7.オッズ(単複枠)
+    #region 6.オッズ(単複枠)
 
     /// <summary>
     /// 単勝オッズ
@@ -1527,6 +1543,7 @@ public static class JVData_Struct
 
         public string TotalHyosuWakuren;                // 枠連票数合計
 
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -1571,12 +1588,14 @@ public static class JVData_Struct
             TotalHyosuTansyo = MidB2S(ref bBuff, 928, 11);
             TotalHyosuFukusyo = MidB2S(ref bBuff, 939, 11);
             TotalHyosuWakuren = MidB2S(ref bBuff, 950, 11);
+            crlf = MidB2S(ref bBuff, 961, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 8.オッズ(馬連)
+    #region 7.オッズ(馬連)
 
     /// <summary>
     /// 馬連オッズ
@@ -1608,6 +1627,7 @@ public static class JVData_Struct
         public ODDS_UMAREN_INFO[] OddsUmarenInfo;       // <馬連票数オッズ>
         public string TotalHyosuUmaren;                 // 馬連票数合計
 
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -1636,12 +1656,14 @@ public static class JVData_Struct
             }
 
             TotalHyosuUmaren = MidB2S(ref bBuff, 2030, 11);
+            crlf = MidB2S(ref bBuff, 2041, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 9.オッズ(ワイド)
+    #region 8.オッズ(ワイド)
 
     /// <summary>
     /// ワイドオッズ
@@ -1676,6 +1698,7 @@ public static class JVData_Struct
         public ODDS_WIDE_INFO[] OddsWideInfo;       // <ワイド票数オッズ>
         public string TotalHyosuWide;               // ワイド票数合計
 
+        public string crlf;                         //レコード区切り
 
         // 配列の初期化
 
@@ -1704,12 +1727,14 @@ public static class JVData_Struct
             }
 
             TotalHyosuWide = MidB2S(ref bBuff, 2642, 11);
+            crlf = MidB2S(ref bBuff, 2653, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 10.オッズ(馬単)
+    #region 9.オッズ(馬単)
 
     /// <summary>
     /// 馬単オッズ
@@ -1742,6 +1767,7 @@ public static class JVData_Struct
         public ODDS_UMATAN_INFO[] OddsUmatanInfo;       // <馬単票数オッズ>
         public string TotalHyosuUmatan;                 // 馬単票数合計
 
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -1770,12 +1796,14 @@ public static class JVData_Struct
             }
 
             TotalHyosuUmatan = MidB2S(ref bBuff, 4019, 11);
+            crlf = MidB2S(ref bBuff, 4030, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 11.オッズ(3連複)
+    #region 10.オッズ(3連複)
 
     /// <summary>
     /// 3連複オッズ
@@ -1808,6 +1836,7 @@ public static class JVData_Struct
         public ODDS_SANREN_INFO[] OddsSanrenInfo;       // <3連複票数オッズ>
         public string TotalHyosuSanrenpuku;             // 3連複票数合計
 
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -1836,12 +1865,14 @@ public static class JVData_Struct
             }
 
             TotalHyosuSanrenpuku = MidB2S(ref bBuff, 12281, 11);
+            crlf = MidB2S(ref bBuff, 12292, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 12.オッズ(3連単)
+    #region 10-1.オッズ(3連単)
 
     /// <summary>
     /// 3連単オッズ
@@ -1874,6 +1905,7 @@ public static class JVData_Struct
         public ODDS_SANRENTAN_INFO[] OddsSanrentanInfo;     // <3連単票数オッズ>
         public string TotalHyosuSanrentan;                  // 3連単票数合計
 
+        public string crlf;                                 // レコード区切り
 
         // 配列の初期化
 
@@ -1902,12 +1934,14 @@ public static class JVData_Struct
             }
 
             TotalHyosuSanrentan = MidB2S(ref bBuff, 83273, 11);
+            crlf = MidB2S(ref bBuff, 83284, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 13.競走馬マスタ
+    #region 11.競走馬マスタ
 
     /// <summary>
     /// 3代血統情報
@@ -1921,8 +1955,8 @@ public static class JVData_Struct
         // データセット
         public void SetDataB(byte[] bBuff)
         {
-            HansyokuNum = MidB2S(ref bBuff, 1, 8);
-            Bamei = MidB2S(ref bBuff, 9, 36);
+            HansyokuNum = MidB2S(ref bBuff, 1, 10);
+            Bamei = MidB2S(ref bBuff, 11, 36);
         }
     }
 
@@ -1987,6 +2021,7 @@ public static class JVData_Struct
         public string[] Kyakusitu;                      // 脚質傾向
 
         public string RaceCount;                        // 登録レース数
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -2004,7 +2039,7 @@ public static class JVData_Struct
         {
             Initialize();
             int i;
-            byte[] bBuff = new byte[1577];
+            byte[] bBuff = new byte[1609];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
@@ -2025,51 +2060,52 @@ public static class JVData_Struct
 
             for (i = 0; i < 14; i++)
             {
-                Ketto3Info[i].SetDataB(MidB2B(ref bBuff, 205 + (44 * i), 44));
+                Ketto3Info[i].SetDataB(MidB2B(ref bBuff, 205 + (46 * i), 46));
             }
-
-            TozaiCD = MidB2S(ref bBuff, 821, 1);
-            ChokyosiCode = MidB2S(ref bBuff, 822, 5);
-            ChokyosiRyakusyo = MidB2S(ref bBuff, 827, 8);
-            Syotai = MidB2S(ref bBuff, 835, 20);
-            BreederCode = MidB2S(ref bBuff, 855, 6);
-            BreederName = MidB2S(ref bBuff, 861, 70);
-            SanchiName = MidB2S(ref bBuff, 931, 20);
-            BanusiCode = MidB2S(ref bBuff, 951, 6);
-            BanusiName = MidB2S(ref bBuff, 957, 64);
-            RuikeiHonsyoHeiti = MidB2S(ref bBuff, 1021, 9);
-            RuikeiHonsyoSyogai = MidB2S(ref bBuff, 1030, 9);
-            RuikeiFukaHeichi = MidB2S(ref bBuff, 1039, 9);
-            RuikeiFukaSyogai = MidB2S(ref bBuff, 1048, 9);
-            RuikeiSyutokuHeichi = MidB2S(ref bBuff, 1057, 9);
-            RuikeiSyutokuSyogai = MidB2S(ref bBuff, 1066, 9);
-            ChakuSogo.SetDataB(MidB2B(ref bBuff, 1075, 18));
-            ChakuChuo.SetDataB(MidB2B(ref bBuff, 1093, 18));
+            TozaiCD = MidB2S(ref bBuff, 849, 1);
+            ChokyosiCode = MidB2S(ref bBuff, 850, 5);
+            ChokyosiRyakusyo = MidB2S(ref bBuff, 855, 8);
+            Syotai = MidB2S(ref bBuff, 863, 20);
+            BreederCode = MidB2S(ref bBuff, 883, 8);
+            BreederName = MidB2S(ref bBuff, 891, 72);
+            SanchiName = MidB2S(ref bBuff, 963, 20);
+            BanusiCode = MidB2S(ref bBuff, 983, 6);
+            BanusiName = MidB2S(ref bBuff, 989, 64);
+            RuikeiHonsyoHeiti = MidB2S(ref bBuff, 1053, 9);
+            RuikeiHonsyoSyogai = MidB2S(ref bBuff, 1062, 9);
+            RuikeiFukaHeichi = MidB2S(ref bBuff, 1071, 9);
+            RuikeiFukaSyogai = MidB2S(ref bBuff, 1080, 9);
+            RuikeiSyutokuHeichi = MidB2S(ref bBuff, 1089, 9);
+            RuikeiSyutokuSyogai = MidB2S(ref bBuff, 1098, 9);
+            ChakuSogo.SetDataB(MidB2B(ref bBuff, 1107, 18));
+            ChakuChuo.SetDataB(MidB2B(ref bBuff, 1125, 18));
 
             for (i = 0; i < 7; i++)
             {
-                ChakuKaisuBa[i].SetDataB(MidB2B(ref bBuff, 1111 + (18 * i), 18));
+                ChakuKaisuBa[i].SetDataB(MidB2B(ref bBuff, 1143 + (18 * i), 18));
             }
             for (i = 0; i < 12; i++)
             {
-                ChakuKaisuJyotai[i].SetDataB(MidB2B(ref bBuff, 1237 + (18 * i), 18));
+                ChakuKaisuJyotai[i].SetDataB(MidB2B(ref bBuff, 1269 + (18 * i), 18));
             }
             for (i = 0; i < 6; i++)
             {
-                ChakuKaisuKyori[i].SetDataB(MidB2B(ref bBuff, 1453 + (18 * i), 18));
+                ChakuKaisuKyori[i].SetDataB(MidB2B(ref bBuff, 1485 + (18 * i), 18));
             }
             for (i = 0; i < 4; i++)
             {
-                Kyakusitu[i] = MidB2S(ref bBuff, 1561 + (3 * i), 3);
+                Kyakusitu[i] = MidB2S(ref bBuff, 1593 + (3 * i), 3);
             }
 
-            RaceCount = MidB2S(ref bBuff, 1573, 3);
+            RaceCount = MidB2S(ref bBuff, 1605, 3);
+            crlf = MidB2S(ref bBuff, 1608, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 14.騎手マスタ
+    #region 12.騎手マスタ
 
     /// <summary>
     /// 初騎乗情報
@@ -2153,6 +2189,7 @@ public static class JVData_Struct
         public HATUSYORI_INFO[] HatuSyori;              // <初勝利情報>
         public SAIKIN_JYUSYO_INFO[] SaikinJyusyo;       // <最近重賞勝利情報>
         public HON_ZEN_RUIKEISEI_INFO[] HonZenRuikei;   // <本年・前年・累計成績情報>
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -2208,12 +2245,14 @@ public static class JVData_Struct
                 HonZenRuikei[i].SetDataB(MidB2B(ref bBuff, 1016 + (1052 * i), 1052));
             }
 
+            crlf = MidB2S(ref bBuff, 4172, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 15.調教師マスタ
+    #region 13.調教師マスタ
 
     public struct JV_CH_CHOKYOSI
     {
@@ -2239,6 +2278,7 @@ public static class JVData_Struct
         public string Syotai;                           // 招待地域名
         public SAIKIN_JYUSYO_INFO[] SaikinJyusyo;       // <最近重賞勝利情報>
         public HON_ZEN_RUIKEISEI_INFO[] HonZenRuikei;   // <本年・前年・累計成績情報>
+        public string crlf;                             // レコード区切り
 
         // 配列の初期化
 
@@ -2279,12 +2319,14 @@ public static class JVData_Struct
                 HonZenRuikei[i].SetDataB(MidB2B(ref bBuff, 705 + (1052 * i), 1052));
             }
 
+            crlf = MidB2S(ref bBuff, 3861, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 16.生産者マスタ
+    #region 14.生産者マスタ
 
     public struct JV_BR_BREEDER
     {
@@ -2299,6 +2341,7 @@ public static class JVData_Struct
 
         public string Address;                  // 生産者住所自治省名
         public SEI_RUIKEI_INFO[] HonRuikei;     // <本年・累計成績情報>
+        public string crlf;                     // レコード区切り
 
         // 配列の初期化
 
@@ -2311,28 +2354,30 @@ public static class JVData_Struct
         public void SetDataB(ref string strBuff)
         {
             Initialize();
-            byte[] bBuff = new byte[537];
+            byte[] bBuff = new byte[545];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            BreederCode = MidB2S(ref bBuff, 12, 6);
-            BreederName_Co = MidB2S(ref bBuff, 18, 70);
-            BreederName = MidB2S(ref bBuff, 88, 70);
-            BreederNameKana = MidB2S(ref bBuff, 158, 70);
-            BreederNameEng = MidB2S(ref bBuff, 228, 168);
-            Address = MidB2S(ref bBuff, 396, 20);
+            BreederCode = MidB2S(ref bBuff, 12, 8);
+            BreederName_Co = MidB2S(ref bBuff, 20, 72);
+            BreederName = MidB2S(ref bBuff, 92, 72);
+            BreederNameKana = MidB2S(ref bBuff, 164, 72);
+            BreederNameEng = MidB2S(ref bBuff, 236, 168);
+            Address = MidB2S(ref bBuff, 404, 20);
 
             for (int i = 0; i < 2; i++)
             {
-                HonRuikei[i].SetDataB(MidB2B(ref bBuff, 416 + (60 * i), 60));
+                HonRuikei[i].SetDataB(MidB2B(ref bBuff, 424 + (60 * i), 60));
             }
 
+            crlf = MidB2S(ref bBuff, 544, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 17.馬主マスタ
+    #region 15.馬主マスタ
 
     public struct JV_BN_BANUSI
     {
@@ -2347,6 +2392,7 @@ public static class JVData_Struct
 
         public string Fukusyoku;                // 服色標示
         public SEI_RUIKEI_INFO[] HonRuikei;     // <本年・累計成績情報>
+        public string crlf;                     // レコード区切り
 
         // 配列の初期化
 
@@ -2375,12 +2421,14 @@ public static class JVData_Struct
                 HonRuikei[i].SetDataB(MidB2B(ref bBuff, 356 + (60 * i), 60));
             }
 
+            crlf = MidB2S(ref bBuff, 476, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 18.繁殖馬マスタ
+    #region 16.繁殖馬マスタ
 
     public struct JV_HN_HANSYOKU
     {
@@ -2409,36 +2457,39 @@ public static class JVData_Struct
 
         public string HansyokuFNum;         // 父馬繁殖登録番号
         public string HansyokuMNum;         // 母馬繁殖登録番号
+        public string crlf;                 // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
         {
-            byte[] bBuff = new byte[245];
+            byte[] bBuff = new byte[251];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            HansyokuNum = MidB2S(ref bBuff, 12, 8);
-            reserved = MidB2S(ref bBuff, 20, 8);
-            KettoNum = MidB2S(ref bBuff, 28, 10);
-            DelKubun = MidB2S(ref bBuff, 38, 1);
-            Bamei = MidB2S(ref bBuff, 39, 36);
-            BameiKana = MidB2S(ref bBuff, 75, 40);
-            BameiEng = MidB2S(ref bBuff, 115, 80);
-            BirthYear = MidB2S(ref bBuff, 195, 4);
-            SexCD = MidB2S(ref bBuff, 199, 1);
-            HinsyuCD = MidB2S(ref bBuff, 200, 1);
-            KeiroCD = MidB2S(ref bBuff, 201, 2);
-            HansyokuMochiKubun = MidB2S(ref bBuff, 203, 1);
-            ImportYear = MidB2S(ref bBuff, 204, 4);
-            SanchiName = MidB2S(ref bBuff, 208, 20);
-            HansyokuFNum = MidB2S(ref bBuff, 228, 8);
-            HansyokuMNum = MidB2S(ref bBuff, 236, 8);
+            HansyokuNum = MidB2S(ref bBuff, 12, 10);
+            reserved = MidB2S(ref bBuff, 22, 8);
+            KettoNum = MidB2S(ref bBuff, 30, 10);
+            DelKubun = MidB2S(ref bBuff, 40, 1);
+            Bamei = MidB2S(ref bBuff, 41, 36);
+            BameiKana = MidB2S(ref bBuff, 77, 40);
+            BameiEng = MidB2S(ref bBuff, 117, 80);
+            BirthYear = MidB2S(ref bBuff, 197, 4);
+            SexCD = MidB2S(ref bBuff, 201, 1);
+            HinsyuCD = MidB2S(ref bBuff, 202, 1);
+            KeiroCD = MidB2S(ref bBuff, 203, 2);
+            HansyokuMochiKubun = MidB2S(ref bBuff, 205, 1);
+            ImportYear = MidB2S(ref bBuff, 206, 4);
+            SanchiName = MidB2S(ref bBuff, 210, 20);
+            HansyokuFNum = MidB2S(ref bBuff, 230, 10);
+            HansyokuMNum = MidB2S(ref bBuff, 240, 10);
+            crlf = MidB2S(ref bBuff, 250, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 19.産駒マスタ
+    #region 17.産駒マスタ
 
     public struct JV_SK_SANKU
     {
@@ -2459,6 +2510,7 @@ public static class JVData_Struct
         public string SanchiName;       // 産地名
 
         public string[] HansyokuNum;    // 3代血統 繁殖登録番号
+        public string crlf;             // レコード区切り
 
         // 配列の初期化
 
@@ -2471,7 +2523,7 @@ public static class JVData_Struct
         public void SetDataB(ref string strBuff)
         {
             Initialize();
-            byte[] bBuff = new byte[178];
+            byte[] bBuff = new byte[208];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
@@ -2482,20 +2534,672 @@ public static class JVData_Struct
             KeiroCD = MidB2S(ref bBuff, 32, 2);
             SankuMochiKubun = MidB2S(ref bBuff, 34, 1);
             ImportYear = MidB2S(ref bBuff, 35, 4);
-            BreederCode = MidB2S(ref bBuff, 39, 6);
-            SanchiName = MidB2S(ref bBuff, 45, 20);
+            BreederCode = MidB2S(ref bBuff, 39, 8);
+            SanchiName = MidB2S(ref bBuff, 47, 20);
 
             for (int i = 0; i < 14; i++)
             {
-                HansyokuNum[i] = MidB2S(ref bBuff, 65 + (8 * i), 8);
+                HansyokuNum[i] = MidB2S(ref bBuff, 67 + (10 * i), 10);
             }
 
+            crlf = MidB2S(ref bBuff, 207, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 20.出走別着度数
+    #region 18.レコードマスタ
+
+    /// <summary>
+    /// レコード保持馬情報
+    /// </summary>
+    public struct RECUMA_INFO
+    {
+        public string KettoNum;         // 血統登録番号
+        public string Bamei;            // 馬名
+
+        public string UmaKigoCD;        // 馬記号コード
+
+        public string SexCD;            // 性別コード
+
+        public string ChokyosiCode;     // 調教師コード
+
+        public string ChokyosiName;     // 調教師名
+
+        public string Futan;            // 負担重量
+
+        public string KisyuCode;        // 騎手コード
+
+        public string KisyuName;        // 騎手名
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            KettoNum = MidB2S(ref bBuff, 1, 10);
+            Bamei = MidB2S(ref bBuff, 11, 36);
+            UmaKigoCD = MidB2S(ref bBuff, 47, 2);
+            SexCD = MidB2S(ref bBuff, 49, 1);
+            ChokyosiCode = MidB2S(ref bBuff, 50, 5);
+            ChokyosiName = MidB2S(ref bBuff, 55, 34);
+            Futan = MidB2S(ref bBuff, 89, 3);
+            KisyuCode = MidB2S(ref bBuff, 92, 5);
+            KisyuName = MidB2S(ref bBuff, 97, 34);
+        }
+    }
+
+    public struct JV_RC_RECORD
+    {
+        public RECORD_ID head;              // <レコードヘッダー>
+        public string RecInfoKubun;         // レコード識別区分
+
+        public RACE_ID id;                  // <競走識別情報>
+        public string TokuNum;              // 特別競走番号
+        public string Hondai;               // 競走名本題
+
+        public string GradeCD;              // グレードコード
+
+        public string SyubetuCD;            // 競走種別コード
+
+        public string Kyori;                // 距離
+        public string TrackCD;              // トラックコード
+
+        public string RecKubun;             // レコード区分
+
+        public string RecTime;              // レコードタイム
+        public TENKO_BABA_INFO TenkoBaba;   // 天候・馬場状態
+
+        public RECUMA_INFO[] RecUmaInfo;    // <レコード保持馬情報>
+        public string crlf;                 // レコード区切り
+
+        // 配列の初期化
+
+        public void Initialize()
+        {
+            RecUmaInfo = new RECUMA_INFO[3];
+        }
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            Initialize();
+            byte[] bBuff = new byte[501];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            RecInfoKubun = MidB2S(ref bBuff, 12, 1);
+            id.SetDataB(MidB2B(ref bBuff, 13, 16));
+            TokuNum = MidB2S(ref bBuff, 29, 4);
+            Hondai = MidB2S(ref bBuff, 33, 60);
+            GradeCD = MidB2S(ref bBuff, 93, 1);
+            SyubetuCD = MidB2S(ref bBuff, 94, 2);
+            Kyori = MidB2S(ref bBuff, 96, 4);
+            TrackCD = MidB2S(ref bBuff, 100, 2);
+            RecKubun = MidB2S(ref bBuff, 102, 1);
+            RecTime = MidB2S(ref bBuff, 103, 4);
+            TenkoBaba.SetDataB(MidB2B(ref bBuff, 107, 3));
+
+            for (int i = 0; i < 3; i++)
+            {
+                RecUmaInfo[i].SetDataB(MidB2B(ref bBuff, 110 + (130 * i), 130));
+            }
+
+            crlf = MidB2S(ref bBuff, 500, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 19.坂路調教
+
+
+    public struct JV_HC_HANRO
+    {
+        public RECORD_ID head;      // <レコードヘッダー>
+        public string TresenKubun;  // トレセン区分
+
+        public YMD ChokyoDate;      // 調教年月日
+        public string ChokyoTime;   // 調教時刻
+        public string KettoNum;     // 血統登録番号
+        public string HaronTime4;   // 4ハロンタイム合計(800M-0M)
+        public string LapTime4;     // ラップタイム(800M-600M)
+        public string HaronTime3;   // 3ハロンタイム合計(600M-0M)
+        public string LapTime3;     // ラップタイム(600M-400M)
+        public string HaronTime2;   // 2ハロンタイム合計(400M-0M)
+        public string LapTime2;     // ラップタイム(400M-200M)
+        public string LapTime1;     // ラップタイム(200M-0M)
+        public string crlf;         // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[60];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            TresenKubun = MidB2S(ref bBuff, 12, 1);
+            ChokyoDate.SetDataB(MidB2B(ref bBuff, 13, 8));
+            ChokyoTime = MidB2S(ref bBuff, 21, 4);
+            KettoNum = MidB2S(ref bBuff, 25, 10);
+            HaronTime4 = MidB2S(ref bBuff, 35, 4);
+            LapTime4 = MidB2S(ref bBuff, 39, 3);
+            HaronTime3 = MidB2S(ref bBuff, 42, 4);
+            LapTime3 = MidB2S(ref bBuff, 46, 3);
+            HaronTime2 = MidB2S(ref bBuff, 49, 4);
+            LapTime2 = MidB2S(ref bBuff, 53, 3);
+            LapTime1 = MidB2S(ref bBuff, 56, 3);
+            crlf = MidB2S(ref bBuff, 59, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 20.馬体重
+
+    /// <summary>
+    /// 馬体重情報
+    /// </summary>
+    public struct BATAIJYU_INFO
+    {
+        public string Umaban;       // 馬番
+        public string Bamei;        // 馬名
+
+        public string BaTaijyu;     // 馬体重
+        public string ZogenFugo;    // 増減符号
+        public string ZogenSa;      // 増減差
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            Umaban = MidB2S(ref bBuff, 1, 2);
+            Bamei = MidB2S(ref bBuff, 3, 36);
+            BaTaijyu = MidB2S(ref bBuff, 39, 3);
+            ZogenFugo = MidB2S(ref bBuff, 42, 1);
+            ZogenSa = MidB2S(ref bBuff, 43, 3);
+        }
+    }
+
+    public struct JV_WH_BATAIJYU
+    {
+        public RECORD_ID head;                  // <レコードヘッダー>
+        public RACE_ID id;                      // <競走識別情報>
+        public MDHM HappyoTime;                 // 発表月日時分
+        public BATAIJYU_INFO[] BataijyuInfo;    // <馬体重情報>
+        public string crlf;                     // レコード区切り
+
+        // 配列の初期化
+
+        public void Initialize()
+        {
+            BataijyuInfo = new BATAIJYU_INFO[18];
+        }
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            Initialize();
+            byte[] bBuff = new byte[847];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
+
+            for (int i = 0; i < 18; i++)
+            {
+                BataijyuInfo[i].SetDataB(MidB2B(ref bBuff, 36 + (45 * i), 45));
+            }
+
+            crlf = MidB2S(ref bBuff, 846, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 21.天候馬場状態
+
+
+    public struct JV_WE_WEATHER
+    {
+        public RECORD_ID head;                      // <レコードヘッダー>
+        public RACE_ID2 id;                         // <競走識別情報２>
+        public MDHM HappyoTime;                     // 発表月日時分
+        public string HenkoID;                      // 変更識別
+        public TENKO_BABA_INFO TenkoBaba;           // 現在状態情報
+        public TENKO_BABA_INFO TenkoBabaBefore;     // 変更前状態情報
+        public string crlf;                         // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[42];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 14));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 26, 8));
+            HenkoID = MidB2S(ref bBuff, 34, 1);
+            TenkoBaba.SetDataB(MidB2B(ref bBuff, 35, 3));
+            TenkoBabaBefore.SetDataB(MidB2B(ref bBuff, 38, 3));
+            crlf = MidB2S(ref bBuff, 41, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 22.出走取消・競走除外
+
+
+    public struct JV_AV_INFO
+    {
+        public RECORD_ID head;      // <レコードヘッダー>
+        public RACE_ID id;          // <競走識別情報>
+        public MDHM HappyoTime;     // 発表月日時分
+        public string Umaban;       // 馬番
+        public string Bamei;        // 馬名
+
+        public string JiyuKubun;    // 事由区分
+
+        public string crlf;         // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[78];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
+            Umaban = MidB2S(ref bBuff, 36, 2);
+            Bamei = MidB2S(ref bBuff, 38, 36);
+            JiyuKubun = MidB2S(ref bBuff, 74, 3);
+            crlf = MidB2S(ref bBuff, 77, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 23.騎手変更
+
+    /// <summary>
+    /// 変更情報
+    /// </summary>
+    public struct JC_INFO
+    {
+        public string Futan;        // 負担重量
+
+        public string KisyuCode;    // 騎手コード
+
+        public string KisyuName;    // 騎手名
+
+        public string MinaraiCD;    // 騎手見習コード
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            Futan = MidB2S(ref bBuff, 1, 3);
+            KisyuCode = MidB2S(ref bBuff, 4, 5);
+            KisyuName = MidB2S(ref bBuff, 9, 34);
+            MinaraiCD = MidB2S(ref bBuff, 43, 1);
+        }
+    }
+
+    public struct JV_JC_INFO
+    {
+        public RECORD_ID head;          // <レコードヘッダー>
+        public RACE_ID id;              // <競走識別情報>
+        public MDHM HappyoTime;         // 発表月日時分
+        public string Umaban;           // 馬番
+        public string Bamei;            // 馬名
+
+        public JC_INFO JCInfoAfter;     // <変更後情報>
+        public JC_INFO JCInfoBefore;    // <変更前情報>
+        public string crlf;             // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[161];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
+            Umaban = MidB2S(ref bBuff, 36, 2);
+            Bamei = MidB2S(ref bBuff, 38, 36);
+            JCInfoAfter.SetDataB(MidB2B(ref bBuff, 74, 43));
+            JCInfoBefore.SetDataB(MidB2B(ref bBuff, 117, 43));
+            crlf = MidB2S(ref bBuff, 160, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 23-1.発走時刻変更
+
+    /// <summary>
+    /// 変更情報
+    /// </summary>
+    public struct TC_INFO
+    {
+        public string Ji;   // 時
+
+        public string Fun;  // 分
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            Ji = MidB2S(ref bBuff, 1, 2);
+            Fun = MidB2S(ref bBuff, 3, 2);
+        }
+    }
+
+    public struct JV_TC_INFO
+    {
+        public RECORD_ID head;          // <レコードヘッダー>
+        public RACE_ID id;              // <競走識別情報>
+        public MDHM HappyoTime;         // 発表月日時分
+        public TC_INFO TCInfoAfter;     // <変更後情報>
+        public TC_INFO TCInfoBefore;    // <変更前情報>
+        public string crlf;             // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[45];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
+            TCInfoAfter.SetDataB(MidB2B(ref bBuff, 36, 4));
+            TCInfoBefore.SetDataB(MidB2B(ref bBuff, 40, 4));
+            crlf = MidB2S(ref bBuff, 44, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 23-2.コース変更
+
+    /// <summary>
+    /// 変更情報
+    /// </summary>
+    public struct CC_INFO
+    {
+        public string Kyori;    // 距離
+        public string TruckCd;  // トラックコード
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            Kyori = MidB2S(ref bBuff, 1, 4);
+            TruckCd = MidB2S(ref bBuff, 5, 2);
+        }
+    }
+
+    public struct JV_CC_INFO
+    {
+        public RECORD_ID head;          // <レコードヘッダー>
+        public RACE_ID id;              // <競走識別情報>
+        public MDHM HappyoTime;         // 発表月日時分
+        public CC_INFO CCInfoAfter;     // <変更後情報>
+        public CC_INFO CCInfoBefore;    // <変更前情報>
+        public string JiyuCd;
+        public string crlf;             // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[50];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
+            CCInfoAfter.SetDataB(MidB2B(ref bBuff, 36, 6));
+            CCInfoBefore.SetDataB(MidB2B(ref bBuff, 42, 6));
+            JiyuCd = MidB2S(ref bBuff, 48, 1);
+            crlf = MidB2S(ref bBuff, 49, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 24.データマイニング予想
+
+    /// <summary>
+    /// マイニング予想
+    /// </summary>
+    public struct DM_INFO
+    {
+        public string Umaban;     // 馬番
+        public string DMTime;     // 予想走破タイム
+        public string DMGosaP;    // 予想誤差(信頼度)＋
+
+        public string DMGosaM;    // 予想誤差(信頼度)－
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            Umaban = MidB2S(ref bBuff, 1, 2);
+            DMTime = MidB2S(ref bBuff, 3, 5);
+            DMGosaP = MidB2S(ref bBuff, 8, 4);
+            DMGosaM = MidB2S(ref bBuff, 12, 4);
+        }
+    }
+
+    public struct JV_DM_INFO
+    {
+        public RECORD_ID head;      // <レコードヘッダー>
+        public RACE_ID id;          // <競走識別情報>
+        public HM MakeHM;           // データ作成時分
+        public DM_INFO[] DMInfo;    // <マイニング予想>
+        public string crlf;         // レコード区切り
+
+        // 配列の初期化
+
+        public void Initialize()
+        {
+            DMInfo = new DM_INFO[18];
+        }
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            Initialize();
+            byte[] bBuff = new byte[303];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 16));
+            MakeHM.SetDataB(MidB2B(ref bBuff, 28, 4));
+
+            for (int i = 0; i < 18; i++)
+            {
+                DMInfo[i].SetDataB(MidB2B(ref bBuff, 32 + (15 * i), 15));
+            }
+
+            crlf = MidB2S(ref bBuff, 302, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 25.開催スケジュール
+
+    /// <summary>
+    /// 重賞案内
+    /// </summary>
+    public struct JYUSYO_INFO
+    {
+        public string TokuNum;      // 特別競走番号
+        public string Hondai;       // 競走名本題
+
+        public string Ryakusyo10;   // 競走名略称10字
+
+        public string Ryakusyo6;    // 競走名略称6字
+
+        public string Ryakusyo3;    // 競走名略称3字
+
+        public string Nkai;         // 重賞回次[第N回]
+        public string GradeCD;      // グレードコード
+
+        public string SyubetuCD;    // 競走種別コード
+
+        public string KigoCD;       // 競走記号コード
+
+        public string JyuryoCD;     // 重量種別コード
+
+        public string Kyori;        // 距離
+        public string TrackCD;      // トラックコード
+
+
+        // データセット
+        public void SetDataB(byte[] bBuff)
+        {
+            TokuNum = MidB2S(ref bBuff, 1, 4);
+            Hondai = MidB2S(ref bBuff, 5, 60);
+            Ryakusyo10 = MidB2S(ref bBuff, 65, 20);
+            Ryakusyo6 = MidB2S(ref bBuff, 85, 12);
+            Ryakusyo3 = MidB2S(ref bBuff, 97, 6);
+            Nkai = MidB2S(ref bBuff, 103, 3);
+            GradeCD = MidB2S(ref bBuff, 106, 1);
+            SyubetuCD = MidB2S(ref bBuff, 107, 2);
+            KigoCD = MidB2S(ref bBuff, 109, 3);
+            JyuryoCD = MidB2S(ref bBuff, 112, 1);
+            Kyori = MidB2S(ref bBuff, 113, 4);
+            TrackCD = MidB2S(ref bBuff, 117, 2);
+        }
+    }
+
+    public struct JV_YS_SCHEDULE
+    {
+        public RECORD_ID head;              // <レコードヘッダー>
+        public RACE_ID2 id;                 // <競走識別情報２>
+        public string YoubiCD;              // 曜日コード
+
+        public JYUSYO_INFO[] JyusyoInfo;    // <重賞案内>
+        public string crlf;                 // レコード区切り
+
+        // 配列の初期化
+
+        public void Initialize()
+        {
+            JyusyoInfo = new JYUSYO_INFO[3];
+        }
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            Initialize();
+            byte[] bBuff = new byte[382];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            id.SetDataB(MidB2B(ref bBuff, 12, 14));
+            YoubiCD = MidB2S(ref bBuff, 26, 1);
+
+            for (int i = 0; i < 3; i++)
+            {
+                JyusyoInfo[i].SetDataB(MidB2B(ref bBuff, 27 + (118 * i), 118));
+            }
+
+            crlf = MidB2S(ref bBuff, 381, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 26.競走馬市場取引価格
+
+    public struct JV_HS_SALE
+    {
+        public RECORD_ID head;         // <レコードヘッダー>
+        public string KettoNum;        // 血統登録番号
+        public string HansyokuFNum;    // 父馬繁殖登録番号
+        public string HansyokuMNum;    // 母馬繁殖登録番号
+        public string BirthYear;       // 生年
+        public string SaleCode;        // 主催者・市場コード
+
+        public string SaleHostName;    // 主催者名称
+        public string SaleName;        // 市場の名称
+        public YMD FromDate;           // 市場の開催期間(開始日)
+        public YMD ToDate;             // 市場の開催期間(終了日)
+        public string Barei;           // 取引時の競走馬の年齢
+        public string Price;           // 取引価格
+        public string crlf;            // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[200];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            KettoNum = MidB2S(ref bBuff, 12, 10);
+            HansyokuFNum = MidB2S(ref bBuff, 22, 10);
+            HansyokuMNum = MidB2S(ref bBuff, 32, 10);
+            BirthYear = MidB2S(ref bBuff, 42, 4);
+            SaleCode = MidB2S(ref bBuff, 46, 6);
+            SaleHostName = MidB2S(ref bBuff, 52, 40);
+            SaleName = MidB2S(ref bBuff, 92, 80);
+            FromDate.SetDataB(MidB2B(ref bBuff, 172, 8));
+            ToDate.SetDataB(MidB2B(ref bBuff, 180, 8));
+            Barei = MidB2S(ref bBuff, 188, 1);
+            Price = MidB2S(ref bBuff, 189, 10);
+            crlf = MidB2S(ref bBuff, 199, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 27.馬名の意味由来
+
+    public struct JV_HY_BAMEIORIGIN
+    {
+        public RECORD_ID head;       // <レコードヘッダー>
+        public string KettoNum;      // 血統登録番号
+        public string Bamei;         // 馬名
+
+        public string Origin;        // 馬名の意味由来
+        public string crlf;          // レコード区切り
+
+        // データセット
+        public void SetDataB(ref string strBuff)
+        {
+            byte[] bBuff = new byte[123];
+            bBuff = Str2Byte(ref strBuff);
+
+            head.SetDataB(MidB2B(ref bBuff, 1, 11));
+            KettoNum = MidB2S(ref bBuff, 12, 10);
+            Bamei = MidB2S(ref bBuff, 22, 36);
+            Origin = MidB2S(ref bBuff, 58, 64);
+            crlf = MidB2S(ref bBuff, 122, 2);
+            bBuff = null;
+        }
+    }
+
+    #endregion
+
+    #region 28.出走別着度数
 
     /// <summary>
     /// 出走別着度数 競走馬情報
@@ -2791,13 +3495,13 @@ public static class JVData_Struct
         public void SetDataB(byte[] bBuff)
         {
             Initialize();
-            BreederCode = MidB2S(ref bBuff, 1, 6);
-            BreederName_Co = MidB2S(ref bBuff, 7, 70);
-            BreederName = MidB2S(ref bBuff, 77, 70);
+            BreederCode = MidB2S(ref bBuff, 1, 8);
+            BreederName_Co = MidB2S(ref bBuff, 9, 72);
+            BreederName = MidB2S(ref bBuff, 81, 72);
 
             for (int i = 0; i < 2; i++)
             {
-                HonRuikei[i].SetDataB(MidB2B(ref bBuff, 147 + (60 * i), 60));
+                HonRuikei[i].SetDataB(MidB2B(ref bBuff, 153 + (60 * i), 60));
             }
         }
     }
@@ -2811,11 +3515,12 @@ public static class JVData_Struct
         public JV_CK_CHOKYOSI ChokyoChaku;       // <出走別着度数 調教師情報>
         public JV_CK_BANUSI BanusiChaku;         // <出走別着度数 馬主情報>
         public JV_CK_BREEDER BreederChaku;       // <出走別着度数 生産者情報>
+        public string crlf;                      // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
         {
-            byte[] bBuff = new byte[6864];
+            byte[] bBuff = new byte[6870];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
@@ -2825,303 +3530,14 @@ public static class JVData_Struct
             ChokyoChaku.SetDataB(MidB2B(ref bBuff, 3864, 2479));
             BanusiChaku.SetDataB(MidB2B(ref bBuff, 6343, 254));
             BreederChaku.SetDataB(MidB2B(ref bBuff, 6597, 266));
+            crlf = MidB2S(ref bBuff, 6869, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 21.レコードマスタ
-
-    /// <summary>
-    /// レコード保持馬情報
-    /// </summary>
-    public struct RECUMA_INFO
-    {
-        public string KettoNum;         // 血統登録番号
-        public string Bamei;            // 馬名
-
-        public string UmaKigoCD;        // 馬記号コード
-
-        public string SexCD;            // 性別コード
-
-        public string ChokyosiCode;     // 調教師コード
-
-        public string ChokyosiName;     // 調教師名
-
-        public string Futan;            // 負担重量
-
-        public string KisyuCode;        // 騎手コード
-
-        public string KisyuName;        // 騎手名
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            KettoNum = MidB2S(ref bBuff, 1, 10);
-            Bamei = MidB2S(ref bBuff, 11, 36);
-            UmaKigoCD = MidB2S(ref bBuff, 47, 2);
-            SexCD = MidB2S(ref bBuff, 49, 1);
-            ChokyosiCode = MidB2S(ref bBuff, 50, 5);
-            ChokyosiName = MidB2S(ref bBuff, 55, 34);
-            Futan = MidB2S(ref bBuff, 89, 3);
-            KisyuCode = MidB2S(ref bBuff, 92, 5);
-            KisyuName = MidB2S(ref bBuff, 97, 34);
-        }
-    }
-
-    public struct JV_RC_RECORD
-    {
-        public RECORD_ID head;              // <レコードヘッダー>
-        public string RecInfoKubun;         // レコード識別区分
-
-        public RACE_ID id;                  // <競走識別情報>
-        public string TokuNum;              // 特別競走番号
-        public string Hondai;               // 競走名本題
-
-        public string GradeCD;              // グレードコード
-
-        public string SyubetuCD;            // 競走種別コード
-
-        public string Kyori;                // 距離
-        public string TrackCD;              // トラックコード
-
-        public string RecKubun;             // レコード区分
-
-        public string RecTime;              // レコードタイム
-        public TENKO_BABA_INFO TenkoBaba;   // 天候・馬場状態
-
-        public RECUMA_INFO[] RecUmaInfo;    // <レコード保持馬情報>
-
-        // 配列の初期化
-
-        public void Initialize()
-        {
-            RecUmaInfo = new RECUMA_INFO[3];
-        }
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            Initialize();
-            byte[] bBuff = new byte[501];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            RecInfoKubun = MidB2S(ref bBuff, 12, 1);
-            id.SetDataB(MidB2B(ref bBuff, 13, 16));
-            TokuNum = MidB2S(ref bBuff, 29, 4);
-            Hondai = MidB2S(ref bBuff, 33, 60);
-            GradeCD = MidB2S(ref bBuff, 93, 1);
-            SyubetuCD = MidB2S(ref bBuff, 94, 2);
-            Kyori = MidB2S(ref bBuff, 96, 4);
-            TrackCD = MidB2S(ref bBuff, 100, 2);
-            RecKubun = MidB2S(ref bBuff, 102, 1);
-            RecTime = MidB2S(ref bBuff, 103, 4);
-            TenkoBaba.SetDataB(MidB2B(ref bBuff, 107, 3));
-
-            for (int i = 0; i < 3; i++)
-            {
-                RecUmaInfo[i].SetDataB(MidB2B(ref bBuff, 110 + (130 * i), 130));
-            }
-
-        }
-    }
-
-    #endregion
-
-    #region 22.坂路調教
-
-
-    public struct JV_HC_HANRO
-    {
-        public RECORD_ID head;      // <レコードヘッダー>
-        public string TresenKubun;  // トレセン区分
-
-        public YMD ChokyoDate;      // 調教年月日
-        public string ChokyoTime;   // 調教時刻
-        public string KettoNum;     // 血統登録番号
-        public string HaronTime4;   // 4ハロンタイム合計(800M-0M)
-        public string LapTime4;     // ラップタイム(800M-600M)
-        public string HaronTime3;   // 3ハロンタイム合計(600M-0M)
-        public string LapTime3;     // ラップタイム(600M-400M)
-        public string HaronTime2;   // 2ハロンタイム合計(400M-0M)
-        public string LapTime2;     // ラップタイム(400M-200M)
-        public string LapTime1;     // ラップタイム(200M-0M)
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[60];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            TresenKubun = MidB2S(ref bBuff, 12, 1);
-            ChokyoDate.SetDataB(MidB2B(ref bBuff, 13, 8));
-            ChokyoTime = MidB2S(ref bBuff, 21, 4);
-            KettoNum = MidB2S(ref bBuff, 25, 10);
-            HaronTime4 = MidB2S(ref bBuff, 35, 4);
-            LapTime4 = MidB2S(ref bBuff, 39, 3);
-            HaronTime3 = MidB2S(ref bBuff, 42, 4);
-            LapTime3 = MidB2S(ref bBuff, 46, 3);
-            HaronTime2 = MidB2S(ref bBuff, 49, 4);
-            LapTime2 = MidB2S(ref bBuff, 53, 3);
-            LapTime1 = MidB2S(ref bBuff, 56, 3);
-        }
-    }
-
-    #endregion
-
-    #region 23.競走馬市場取引価格
-
-    public struct JV_HS_SALE
-    {
-        public RECORD_ID head;         // <レコードヘッダー>
-        public string KettoNum;        // 血統登録番号
-        public string HansyokuFNum;    // 父馬繁殖登録番号
-        public string HansyokuMNum;    // 母馬繁殖登録番号
-        public string BirthYear;       // 生年
-        public string SaleCode;        // 主催者・市場コード
-
-        public string SaleHostName;    // 主催者名称
-        public string SaleName;        // 市場の名称
-        public YMD FromDate;           // 市場の開催期間(開始日)
-        public YMD ToDate;             // 市場の開催期間(終了日)
-        public string Barei;           // 取引時の競走馬の年齢
-        public string Price;           // 取引価格
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[196];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            KettoNum = MidB2S(ref bBuff, 12, 10);
-            HansyokuFNum = MidB2S(ref bBuff, 22, 8);
-            HansyokuMNum = MidB2S(ref bBuff, 30, 8);
-            BirthYear = MidB2S(ref bBuff, 38, 4);
-            SaleCode = MidB2S(ref bBuff, 42, 6);
-            SaleHostName = MidB2S(ref bBuff, 48, 40);
-            SaleName = MidB2S(ref bBuff, 88, 80);
-            FromDate.SetDataB(MidB2B(ref bBuff, 168, 8));
-            ToDate.SetDataB(MidB2B(ref bBuff, 176, 8));
-            Barei = MidB2S(ref bBuff, 184, 1);
-            Price = MidB2S(ref bBuff, 185, 10);
-        }
-    }
-
-    #endregion
-
-    #region 24.馬名の意味由来
-
-    public struct JV_HY_BAMEIORIGIN
-    {
-        public RECORD_ID head;       // <レコードヘッダー>
-        public string KettoNum;      // 血統登録番号
-        public string Bamei;         // 馬名
-
-        public string Origin;        // 馬名の意味由来
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[123];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            KettoNum = MidB2S(ref bBuff, 12, 10);
-            Bamei = MidB2S(ref bBuff, 22, 36);
-            Origin = MidB2S(ref bBuff, 58, 64);
-        }
-    }
-
-    #endregion
-
-    #region 25.開催スケジュール
-
-    /// <summary>
-    /// 重賞案内
-    /// </summary>
-    public struct JYUSYO_INFO
-    {
-        public string TokuNum;      // 特別競走番号
-        public string Hondai;       // 競走名本題
-
-        public string Ryakusyo10;   // 競走名略称10字
-
-        public string Ryakusyo6;    // 競走名略称6字
-
-        public string Ryakusyo3;    // 競走名略称3字
-
-        public string Nkai;         // 重賞回次[第N回]
-        public string GradeCD;      // グレードコード
-
-        public string SyubetuCD;    // 競走種別コード
-
-        public string KigoCD;       // 競走記号コード
-
-        public string JyuryoCD;     // 重量種別コード
-
-        public string Kyori;        // 距離
-        public string TrackCD;      // トラックコード
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            TokuNum = MidB2S(ref bBuff, 1, 4);
-            Hondai = MidB2S(ref bBuff, 5, 60);
-            Ryakusyo10 = MidB2S(ref bBuff, 65, 20);
-            Ryakusyo6 = MidB2S(ref bBuff, 85, 12);
-            Ryakusyo3 = MidB2S(ref bBuff, 97, 6);
-            Nkai = MidB2S(ref bBuff, 103, 3);
-            GradeCD = MidB2S(ref bBuff, 106, 1);
-            SyubetuCD = MidB2S(ref bBuff, 107, 2);
-            KigoCD = MidB2S(ref bBuff, 109, 3);
-            JyuryoCD = MidB2S(ref bBuff, 112, 1);
-            Kyori = MidB2S(ref bBuff, 113, 4);
-            TrackCD = MidB2S(ref bBuff, 117, 2);
-        }
-    }
-
-    public struct JV_YS_SCHEDULE
-    {
-        public RECORD_ID head;              // <レコードヘッダー>
-        public RACE_ID2 id;                 // <競走識別情報２>
-        public string YoubiCD;              // 曜日コード
-
-        public JYUSYO_INFO[] JyusyoInfo;    // <重賞案内>
-
-        // 配列の初期化
-
-        public void Initialize()
-        {
-            JyusyoInfo = new JYUSYO_INFO[3];
-        }
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            Initialize();
-            byte[] bBuff = new byte[382];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 14));
-            YoubiCD = MidB2S(ref bBuff, 26, 1);
-
-            for (int i = 0; i < 3; i++)
-            {
-                JyusyoInfo[i].SetDataB(MidB2B(ref bBuff, 27 + (118 * i), 118));
-            }
-
-        }
-    }
-
-    #endregion
-
-    #region 26.系統情報
+    #region 29.系統情報
 
     public struct JV_BT_KEITO
     {
@@ -3132,24 +3548,27 @@ public static class JVData_Struct
 
         public string KeitoEx;          // 系統説明
 
+        public string crlf;             // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
         {
-            byte[] bBuff = new byte[6887];
+            byte[] bBuff = new byte[6889];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            HansyokuNum = MidB2S(ref bBuff, 12, 8);
-            KeitoId = MidB2S(ref bBuff, 20, 30);
-            KeitoName = MidB2S(ref bBuff, 50, 36);
-            KeitoEx = MidB2S(ref bBuff, 86, 6800);
+            HansyokuNum = MidB2S(ref bBuff, 12, 10);
+            KeitoId = MidB2S(ref bBuff, 22, 30);
+            KeitoName = MidB2S(ref bBuff, 52, 36);
+            KeitoEx = MidB2S(ref bBuff, 88, 6800);
+            crlf = MidB2S(ref bBuff, 6888, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 27.コース情報
+    #region 30.コース情報
 
     public struct JV_CS_COURSE
     {
@@ -3162,6 +3581,7 @@ public static class JVData_Struct
         public YMD KaishuDate;      // コース改修年月日
         public string CourseEx;     // コース説明
 
+        public string crlf;         // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
@@ -3175,71 +3595,14 @@ public static class JVData_Struct
             TrackCD = MidB2S(ref bBuff, 18, 2);
             KaishuDate.SetDataB(MidB2B(ref bBuff, 20, 8));
             CourseEx = MidB2S(ref bBuff, 28, 6800);
+            crlf = MidB2S(ref bBuff, 6828, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 28.データマイニング予想
-
-    /// <summary>
-    /// マイニング予想
-    /// </summary>
-    public struct DM_INFO
-    {
-        public string Umaban;     // 馬番
-        public string DMTime;     // 予想走破タイム
-        public string DMGosaP;    // 予想誤差(信頼度)＋
-
-        public string DMGosaM;    // 予想誤差(信頼度)－
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            Umaban = MidB2S(ref bBuff, 1, 2);
-            DMTime = MidB2S(ref bBuff, 3, 5);
-            DMGosaP = MidB2S(ref bBuff, 8, 4);
-            DMGosaM = MidB2S(ref bBuff, 12, 4);
-        }
-    }
-
-    public struct JV_DM_INFO
-    {
-        public RECORD_ID head;      // <レコードヘッダー>
-        public RACE_ID id;          // <競走識別情報>
-        public HM MakeHM;           // データ作成時分
-        public DM_INFO[] DMInfo;    // <マイニング予想>
-
-        // 配列の初期化
-
-        public void Initialize()
-        {
-            DMInfo = new DM_INFO[18];
-        }
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            Initialize();
-            byte[] bBuff = new byte[303];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            MakeHM.SetDataB(MidB2B(ref bBuff, 28, 4));
-
-            for (int i = 0; i < 18; i++)
-            {
-                DMInfo[i].SetDataB(MidB2B(ref bBuff, 32 + (15 * i), 15));
-            }
-
-        }
-    }
-
-    #endregion
-
-    #region 29.対戦型データマイニング予想
+    #region 31.対戦型データマイニング予想
 
     /// <summary>
     /// 対戦型データマイニング予想
@@ -3264,6 +3627,7 @@ public static class JVData_Struct
         public RACE_ID id;          // <競走識別情報>
         public HM MakeHM;           // データ作成時分
         public TM_INFO[] TMInfo;    // <マイニング予想>
+        public string crlf;         // レコード区切り
 
         // 配列の初期化
 
@@ -3288,12 +3652,14 @@ public static class JVData_Struct
                 TMInfo[i].SetDataB(MidB2B(ref bBuff, 32 + (6 * i), 6));
             }
 
+            crlf = MidB2S(ref bBuff, 140, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 30.重勝式(WIN5)
+    #region 32.重勝式(WIN5)
 
     /// <summary>
     /// 重勝式対象レース情報
@@ -3364,6 +3730,7 @@ public static class JVData_Struct
         public string COShoki;                                // キャリーオーバー金額初期
         public string COZanDaka;                              // キャリーオーバー金額残高
         public WF_PAY_INFO[] WFPayInfo;                // <重勝式払戻情報>
+        public string crlf;                            // レコード区切り
 
         // 配列の初期化
 
@@ -3409,12 +3776,14 @@ public static class JVData_Struct
                 WFPayInfo[i].SetDataB(MidB2B(ref bBuff, 167 + (29 * i), 29));
             }
 
+            crlf = MidB2S(ref bBuff, 140, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 31.競走馬除外情報
+    #region 33.競走馬除外情報
 
     public struct JV_JG_JOGAIBA
     {
@@ -3425,6 +3794,7 @@ public static class JVData_Struct
         public string ShutsubaTohyoJun;   // 出馬投票受付順番
         public string ShussoKubun;        // 出走区分
         public string JogaiJotaiKubun;    // 除外状態区分
+        public string crlf;               // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
@@ -3439,15 +3809,17 @@ public static class JVData_Struct
             ShutsubaTohyoJun = MidB2S(ref bBuff, 74, 3);
             ShussoKubun = MidB2S(ref bBuff, 77, 1);
             JogaiJotaiKubun = MidB2S(ref bBuff, 78, 1);
+            crlf = MidB2S(ref bBuff, 79, 2);
+            bBuff = null;
         }
     }
 
     #endregion
 
-    #region 32.ウッドチップ調教
+    #region 34.ウッドチップ調教
 
 
-    public struct JV_WC_WOODCHIP
+    public struct JV_WC_WOOD
     {
         public RECORD_ID head;      // <レコードヘッダー>
         public string TresenKubun;  // トレセン区分
@@ -3455,33 +3827,34 @@ public static class JVData_Struct
         public YMD ChokyoDate;      // 調教年月日
         public string ChokyoTime;   // 調教時刻
         public string KettoNum;     // 血統登録番号
-        public string Course;       // 調教コース 0：A、1：B、2：C、3：D、4：E
-        public string BabaLR;       // 馬場周り 0：右、1：左
+        public string Course;       // コース
+        public string BabaAround;   // 馬場周り
         public string reserved;     // 予備
-        public string HaronTime10;  // ハロンタイム合計
-        public string LapTime10;    // ラップタイム
-        public string HaronTime9;  // ハロンタイム合計
-        public string LapTime9;    // ラップタイム
-        public string HaronTime8;  // ハロンタイム合計
-        public string LapTime8;    // ラップタイム
-        public string HaronTime7;  // ハロンタイム合計
-        public string LapTime7;    // ラップタイム
-        public string HaronTime6;  // ハロンタイム合計
-        public string LapTime6;    // ラップタイム
-        public string HaronTime5;  // ハロンタイム合計
-        public string LapTime5;    // ラップタイム
-        public string HaronTime4;  // ハロンタイム合計
-        public string LapTime4;    // ラップタイム
-        public string HaronTime3;  // ハロンタイム合計
-        public string LapTime3;    // ラップタイム
-        public string HaronTime2;  // ハロンタイム合計
-        public string LapTime2;    // ラップタイム
+        public string HaronTime10;  // 10ハロンタイム合計(2000M-0M)
+        public string LapTime10;    // ラップタイム(2000M-1800M)
+        public string HaronTime9;   // 9ハロンタイム合計(1800M-0M)
+        public string LapTime9;     // ラップタイム(1800M-1600M)
+        public string HaronTime8;   // 8ハロンタイム合計(1600M-0M)
+        public string LapTime8;     // ラップタイム(1600M-1400M)
+        public string HaronTime7;   // 7ハロンタイム合計(1400M-0M)
+        public string LapTime7;     // ラップタイム(1400M-1200M)
+        public string HaronTime6;   // 6ハロンタイム合計(1200M-0M)
+        public string LapTime6;     // ラップタイム(1200M-1000M)
+        public string HaronTime5;   // 5ハロンタイム合計(1000M-0M)
+        public string LapTime5;     // ラップタイム(1000M-800M)
+        public string HaronTime4;   // 4ハロンタイム合計(800M-0M)
+        public string LapTime4;     // ラップタイム(800M-600M)
+        public string HaronTime3;   // 3ハロンタイム合計(600M-0M)
+        public string LapTime3;     // ラップタイム(600M-400M)
+        public string HaronTime2;   // 2ハロンタイム合計(400M-0M)
+        public string LapTime2;     // ラップタイム(400M-200M)
         public string LapTime1;     // ラップタイム(200M-0M)
+        public string crlf;         // レコード区切り
 
         // データセット
         public void SetDataB(ref string strBuff)
         {
-            byte[] bBuff = new byte[60];
+            byte[] bBuff = new byte[105];
             bBuff = Str2Byte(ref strBuff);
 
             head.SetDataB(MidB2B(ref bBuff, 1, 11));
@@ -3490,7 +3863,7 @@ public static class JVData_Struct
             ChokyoTime = MidB2S(ref bBuff, 21, 4);
             KettoNum = MidB2S(ref bBuff, 25, 10);
             Course = MidB2S(ref bBuff, 35, 1);
-            BabaLR = MidB2S(ref bBuff, 36, 1);
+            BabaAround = MidB2S(ref bBuff, 36, 1);
             reserved = MidB2S(ref bBuff, 37, 1);
             HaronTime10 = MidB2S(ref bBuff, 38, 4);
             LapTime10 = MidB2S(ref bBuff, 42, 3);
@@ -3511,272 +3884,8 @@ public static class JVData_Struct
             HaronTime2 = MidB2S(ref bBuff, 94, 4);
             LapTime2 = MidB2S(ref bBuff, 98, 3);
             LapTime1 = MidB2S(ref bBuff, 101, 3);
-        }
-    }
-
-    #endregion
-
-
-
-    #region 101.馬体重
-
-    /// <summary>
-    /// 馬体重情報
-    /// </summary>
-    public struct BATAIJYU_INFO
-    {
-        public string Umaban;       // 馬番
-        public string Bamei;        // 馬名
-
-        public string BaTaijyu;     // 馬体重
-        public string ZogenFugo;    // 増減符号
-        public string ZogenSa;      // 増減差
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            Umaban = MidB2S(ref bBuff, 1, 2);
-            Bamei = MidB2S(ref bBuff, 3, 36);
-            BaTaijyu = MidB2S(ref bBuff, 39, 3);
-            ZogenFugo = MidB2S(ref bBuff, 42, 1);
-            ZogenSa = MidB2S(ref bBuff, 43, 3);
-        }
-    }
-
-    public struct JV_WH_BATAIJYU
-    {
-        public RECORD_ID head;                  // <レコードヘッダー>
-        public RACE_ID id;                      // <競走識別情報>
-        public MDHM HappyoTime;                 // 発表月日時分
-        public BATAIJYU_INFO[] BataijyuInfo;    // <馬体重情報>
-
-        // 配列の初期化
-
-        public void Initialize()
-        {
-            BataijyuInfo = new BATAIJYU_INFO[18];
-        }
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            Initialize();
-            byte[] bBuff = new byte[847];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
-
-            for (int i = 0; i < 18; i++)
-            {
-                BataijyuInfo[i].SetDataB(MidB2B(ref bBuff, 36 + (45 * i), 45));
-            }
-
-        }
-    }
-
-    #endregion
-
-    #region 102.天候馬場状態
-
-
-    public struct JV_WE_WEATHER
-    {
-        public RECORD_ID head;                      // <レコードヘッダー>
-        public RACE_ID2 id;                         // <競走識別情報２>
-        public MDHM HappyoTime;                     // 発表月日時分
-        public string HenkoID;                      // 変更識別
-        public TENKO_BABA_INFO TenkoBaba;           // 現在状態情報
-        public TENKO_BABA_INFO TenkoBabaBefore;     // 変更前状態情報
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[42];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 14));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 26, 8));
-            HenkoID = MidB2S(ref bBuff, 34, 1);
-            TenkoBaba.SetDataB(MidB2B(ref bBuff, 35, 3));
-            TenkoBabaBefore.SetDataB(MidB2B(ref bBuff, 38, 3));
-        }
-    }
-
-    #endregion
-
-    #region 103.出走取消・競走除外
-
-
-    public struct JV_AV_INFO
-    {
-        public RECORD_ID head;      // <レコードヘッダー>
-        public RACE_ID id;          // <競走識別情報>
-        public MDHM HappyoTime;     // 発表月日時分
-        public string Umaban;       // 馬番
-        public string Bamei;        // 馬名
-
-        public string JiyuKubun;    // 事由区分
-
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[78];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
-            Umaban = MidB2S(ref bBuff, 36, 2);
-            Bamei = MidB2S(ref bBuff, 38, 36);
-            JiyuKubun = MidB2S(ref bBuff, 74, 3);
-        }
-    }
-
-    #endregion
-
-    #region 104.騎手変更
-
-    /// <summary>
-    /// 変更情報
-    /// </summary>
-    public struct JC_INFO
-    {
-        public string Futan;        // 負担重量
-
-        public string KisyuCode;    // 騎手コード
-
-        public string KisyuName;    // 騎手名
-
-        public string MinaraiCD;    // 騎手見習コード
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            Futan = MidB2S(ref bBuff, 1, 3);
-            KisyuCode = MidB2S(ref bBuff, 4, 5);
-            KisyuName = MidB2S(ref bBuff, 9, 34);
-            MinaraiCD = MidB2S(ref bBuff, 43, 1);
-        }
-    }
-
-    public struct JV_JC_INFO
-    {
-        public RECORD_ID head;          // <レコードヘッダー>
-        public RACE_ID id;              // <競走識別情報>
-        public MDHM HappyoTime;         // 発表月日時分
-        public string Umaban;           // 馬番
-        public string Bamei;            // 馬名
-
-        public JC_INFO JCInfoAfter;     // <変更後情報>
-        public JC_INFO JCInfoBefore;    // <変更前情報>
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[161];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
-            Umaban = MidB2S(ref bBuff, 36, 2);
-            Bamei = MidB2S(ref bBuff, 38, 36);
-            JCInfoAfter.SetDataB(MidB2B(ref bBuff, 74, 43));
-            JCInfoBefore.SetDataB(MidB2B(ref bBuff, 117, 43));
-        }
-    }
-
-    #endregion
-
-    #region 105.発走時刻変更
-
-    /// <summary>
-    /// 変更情報
-    /// </summary>
-    public struct TC_INFO
-    {
-        public string Ji;   // 時
-
-        public string Fun;  // 分
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            Ji = MidB2S(ref bBuff, 1, 2);
-            Fun = MidB2S(ref bBuff, 3, 2);
-        }
-    }
-
-    public struct JV_TC_INFO
-    {
-        public RECORD_ID head;          // <レコードヘッダー>
-        public RACE_ID id;              // <競走識別情報>
-        public MDHM HappyoTime;         // 発表月日時分
-        public TC_INFO TCInfoAfter;     // <変更後情報>
-        public TC_INFO TCInfoBefore;    // <変更前情報>
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[45];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
-            TCInfoAfter.SetDataB(MidB2B(ref bBuff, 36, 4));
-            TCInfoBefore.SetDataB(MidB2B(ref bBuff, 40, 4));
-        }
-    }
-
-    #endregion
-
-    #region 106.コース変更
-
-    /// <summary>
-    /// 変更情報
-    /// </summary>
-    public struct CC_INFO
-    {
-        public string Kyori;    // 距離
-        public string TrackCD;  // トラックコード
-
-
-        // データセット
-        public void SetDataB(byte[] bBuff)
-        {
-            Kyori = MidB2S(ref bBuff, 1, 4);
-            TrackCD = MidB2S(ref bBuff, 5, 2);
-        }
-    }
-
-    public struct JV_CC_INFO
-    {
-        public RECORD_ID head;          // <レコードヘッダー>
-        public RACE_ID id;              // <競走識別情報>
-        public MDHM HappyoTime;         // 発表月日時分
-        public CC_INFO CCInfoAfter;     // <変更後情報>
-        public CC_INFO CCInfoBefore;    // <変更前情報>
-        public string JiyuCd;
-
-        // データセット
-        public void SetDataB(ref string strBuff)
-        {
-            byte[] bBuff = new byte[50];
-            bBuff = Str2Byte(ref strBuff);
-
-            head.SetDataB(MidB2B(ref bBuff, 1, 11));
-            id.SetDataB(MidB2B(ref bBuff, 12, 16));
-            HappyoTime.SetDataB(MidB2B(ref bBuff, 28, 8));
-            CCInfoAfter.SetDataB(MidB2B(ref bBuff, 36, 6));
-            CCInfoBefore.SetDataB(MidB2B(ref bBuff, 42, 6));
-            JiyuCd = MidB2S(ref bBuff, 48, 1);
+            crlf = MidB2S(ref bBuff, 104, 2);
+            bBuff = null;
         }
     }
 
