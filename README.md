@@ -15,3 +15,10 @@
 ```
 .\source\repos\JVConsole\JVConsole\bin\Release\JVConsole.exe jv --fromdate 20100101000000 --option 4 --dataspec TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING --outputDir .\data\umacotron\txt
 ```
+
+
+## Changes
+
+- KoryuKubun -> Koryu
+- BlinkerKubun -> Blinker
+- JV_WC_WOODCHIP -> JV_WC_WOOD
