@@ -158,7 +158,7 @@ namespace JVParser
                 { "TK", typeof(JV_TK_TOKUUMA) },
                 { "TM", typeof(JV_TM_INFO) },
                 { "UM", typeof(JV_UM_UMA) },
-                { "WC", typeof(JV_WC_WOODCHIP) },
+                { "WC", typeof(JV_WC_WOOD) },
                 { "WE", typeof(JV_WE_WEATHER) },
                 { "WF", typeof(JV_WF_INFO) },
                 { "WH", typeof(JV_WH_BATAIJYU) },

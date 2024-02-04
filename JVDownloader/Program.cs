@@ -23,13 +23,13 @@ namespace JVDownloader
             [Option("dataspec", Required = true, Separator = ',', HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 option = 1
-TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING
+TOKU,RACE,DIFN,BLOD,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING
 
 option = 2
-TOKU,RACE,TCOV,RCOV,SNAP
+TOKU,RACE,TCOV,RCOV,SNPN
 
 option = 3,4
-TOKU,RACE,DIFF,BLOD,SNAP,SLOP,WOOD,YSCH,HOSE,HOYU,COMM,MING")]
+TOKU,RACE,DIFN,BLOD,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING")]
             public IEnumerable<string> Dataspec { get; set; }
 
 
