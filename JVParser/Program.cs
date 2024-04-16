@@ -1,6 +1,7 @@
 ﻿using CommandLine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using static JVData_Struct;
 
@@ -45,6 +46,101 @@ namespace JVParser
         static void Main(string[] args)
         {
             Parser.Default.ParseArguments<Options>(args).WithParsed(RunOptions).WithNotParsed(HandleParseError);
+        }
+
+        static void ProcessChunk(List<string> lines, IEnumerable<string> skipRecordSpec, RecordSpecStreamWriterManager recordSpecStreamWriterManager)
+        {
+            var results = new ConcurrentBag<JVJson>();
+
+            Parallel.ForEach(lines, (line) =>
+            {
+                var jvJson = JVReadToJson(line, skipRecordSpec);
+                if (jvJson != null)
+                {
+                    results.Add(jvJson);
+                }
+            });
+
+            // チャンクごとの結果をファイルに書き込み
+            foreach (var jvJson in results)
+            {
+
+                try
+                {
+                    // Write to the output file
+                    recordSpecStreamWriterManager.WriteLineToStreamWriter(jvJson.recordSpec, jvJson.json);
+                }
+                catch (OutputFileAlreadyExistsException e)
+                {
+                    Console.Error.WriteLine(e.Message);
+                    Environment.Exit(ErrorCode.ErrorOutputFileAlreadyExists);
+                }
+
+            }
+        }
+
+        static void RunOptionsParallel(Options opts)
+        {
+            // To use Shift-JIS encoding, use the following:
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+            // Get the input file path
+            string inputFilePath = opts.InputPath;
+
+            // Get output directory from args
+            string outputDir = opts.OutputDir;
+
+            // Get skipRecordSpec from args
+            IEnumerable<string> skipRecordSpec = opts.SkipRecordSpec;
+
+            // Get input file name without extension
+            string fileNamePrefix = Path.GetFileNameWithoutExtension(inputFilePath);
+
+            // Initalize the recordspec stream writer manager
+            RecordSpecStreamWriterManager recordSpecStreamWriterManager = new RecordSpecStreamWriterManager(outputDir, fileNamePrefix);
+
+            var chunkSize = 1000; // チャンクサイズを設定（適切な値に調整）
+
+            // ファイルをチャンクに分割して処理
+            using (var fileStream = File.OpenRead(opts.InputPath))
+            using (var streamReader = new StreamReader(fileStream))
+            {
+                var lines = new List<string>();
+                var lineNumber = 0;
+
+                while (!streamReader.EndOfStream)
+                {
+                    var line = streamReader.ReadLine();
+
+                    if (line == null)
+                    {
+                        continue;
+                    }
+
+                    lines.Add(line);
+                    lineNumber++;
+
+                    // チャンクサイズごとに処理
+                    if (lineNumber % chunkSize == 0)
+                    {
+                        ProcessChunk(lines, opts.SkipRecordSpec, recordSpecStreamWriterManager);
+                        lines.Clear();
+                    }
+                }
+
+                // 残りの行を処理
+                if (lines.Any())
+                {
+                    ProcessChunk(lines, opts.SkipRecordSpec, recordSpecStreamWriterManager);
+                }
+            }
+
+            // 終了処理
+            recordSpecStreamWriterManager.PrintOutputPaths();
+
+            recordSpecStreamWriterManager.Close();
+
+            Environment.Exit(ErrorCode.Success);
         }
 
         static void RunOptions(Options opts)
