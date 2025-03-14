@@ -324,7 +324,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
                 // 進捗フォームがある場合、現在の読み込み件数を更新し、ステータスを出力
                 progressForm?.UpdateProgress(currentReadCount);
-                // progressForm?.AppendStatus($"Read status: {readStatus}, Current read count: {currentReadCount}");
 
                 switch (readStatus)
                 {
