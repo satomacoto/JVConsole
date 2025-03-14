@@ -3,19 +3,94 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 using System.IO;
-
+using System.Windows.Forms; // 進捗フォーム用に追加
 
 namespace JVDownloader
 {
+    // 進捗表示用フォーム
+    public class ProgressForm : Form
+    {
+        private Label labelProgress;
+        private ProgressBar progressBar;
+        private TextBox textBoxStatus; // ログ出力用テキストボックス
+
+        // デフォルトコンストラクタ
+        public ProgressForm()
+        {
+            InitializeComponents();
+        }
+
+        // 総ファイル数を受け取るコンストラクタ（プログレスバーの最大値設定）
+        public ProgressForm(int totalCount) : this()
+        {
+            progressBar.Style = ProgressBarStyle.Continuous;
+            progressBar.Minimum = 0;
+            progressBar.Maximum = totalCount;
+            labelProgress.Text = $"Processed files: 0 / {totalCount}";
+        }
+
+        private void InitializeComponents()
+        {
+            this.Text = "進捗状況";
+            this.Width = 400;
+            this.Height = 300;
+            this.StartPosition = FormStartPosition.CenterScreen;
+
+            labelProgress = new Label();
+            labelProgress.AutoSize = true;
+            labelProgress.Location = new System.Drawing.Point(20, 20);
+            labelProgress.Text = "処理中...";
+            this.Controls.Add(labelProgress);
+
+            progressBar = new ProgressBar();
+            progressBar.Location = new System.Drawing.Point(20, 50);
+            progressBar.Width = 340;
+            this.Controls.Add(progressBar);
+
+            textBoxStatus = new TextBox();
+            textBoxStatus.Multiline = true;
+            textBoxStatus.ReadOnly = true;
+            textBoxStatus.ScrollBars = ScrollBars.Vertical;
+            textBoxStatus.Location = new System.Drawing.Point(20, 90);
+            textBoxStatus.Width = 340;
+            textBoxStatus.Height = 150;
+            this.Controls.Add(textBoxStatus);
+        }
+
+        // 現在の進捗値を更新する（プログレスバーとラベル）
+        public void UpdateProgress(int currentCount)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => UpdateProgress(currentCount)));
+            }
+            else
+            {
+                progressBar.Value = Math.Min(currentCount, progressBar.Maximum);
+                labelProgress.Text = $"Processed files: {currentCount} / {progressBar.Maximum}";
+            }
+        }
+
+        // ステータスメッセージをテキストボックスに追記する
+        public void AppendStatus(string message)
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() => AppendStatus(message)));
+            }
+            else
+            {
+                textBoxStatus.AppendText($"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}");
+            }
+        }
+    }
+
     internal class Program
     {
         const string Sid = "UNKNOWN";
 
         [Verb("setup", HelpText = "設定ダイアログの表示")]
-        public class SetupOptions
-        {
-
-        }
+        public class SetupOptions { }
 
         [Verb("jv", HelpText = "蓄積系データのダウンロード")]
         public class JvOptions
@@ -32,7 +107,6 @@ option = 3,4
 TOKU,RACE,DIFN,BLOD,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING")]
             public IEnumerable<string> Dataspec { get; set; }
 
-
             [Option("fromdate", Required = false, Default = "20211101000000", HelpText = @"fromdate. YYYYMMDDhhmmss or YYYYMMDDhhmmss-YYYYMMDDhhmmss.
 e.g. 20181001000000")]
             public string Fromdate { get; set; }
@@ -46,7 +120,6 @@ e.g. 20181001000000")]
             [Option("wait", Required = false, Default = 1000, HelpText = @"処理間隔 [sec]")]
             public int Wait { get; set; }
         }
-
 
         [Verb("jvrt", HelpText = "速報系データのダウンロード")]
         public class JvrtOptions
@@ -89,7 +162,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             public int Wait { get; set; }
         }
 
-
         [STAThread]
         static void Main(string[] args)
         {
@@ -105,7 +177,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVSetUIProperties();
             jvLink.JVClose();
-            return;
         }
 
         static void RunJvOptions(JvOptions opts)
@@ -119,26 +190,23 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 throw new Exception("optionは1,2,3,4のいずれかを指定してください");
             }
 
-            Console.Error.WriteLine($"Start to JV. Fromdate: {opts.Fromdate}, Option: {opts.Option}");
+            // ここでのステータスは progressForm を通じて表示するため、RunJV 内で更新
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
-                Console.Error.WriteLine($"JV {dataspec}");
                 RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir, opts.Wait);
             }
         }
 
         static void RunJvrtOptions(JvrtOptions opts)
         {
-            Console.Error.WriteLine($"Start to JVRT.");
             var jvLink = new JVDTLabLib.JVLink();
             jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
                 foreach (var key in opts.Key)
                 {
-                    Console.Error.WriteLine($"JVRT {dataspec} {key}");
                     RunJVRT(jvLink, dataspec, key, opts.OutputDir, opts.Wait);
                 }
             }
@@ -146,10 +214,10 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
         static void HandleParseError(IEnumerable<Error> errs)
         {
-            //handle errors
+            // エラー処理
         }
 
-
+        // JVDownload処理内に進捗フォームを組み込んだ例（JV用）
         static void RunJV(JVDTLabLib.JVLink jvLink, string dataspec, string fromdate, int option, string outputDir, int wait = 1000)
         {
             var nReadCount = 0;             // JVOpen: 総読み込みファイル数
@@ -164,16 +232,46 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                 return;
             }
 
-            Console.Error.WriteLine("Data spec: " + dataspec);
-            Console.Error.WriteLine("Total read count: " + nReadCount.ToString());
+            // プログレスフォーム作成（総ファイル数 nReadCount を最大値に設定）
+            ProgressForm progressForm = null;
+            Thread progressThread = new Thread(() =>
+            {
+                progressForm = new ProgressForm(nReadCount);
+                Application.Run(progressForm);
+            });
+            progressThread.SetApartmentState(ApartmentState.STA);
+            progressThread.Start();
+            // フォームが表示されるまで待機
+            while (progressForm == null || !progressForm.IsHandleCreated)
+            {
+                Thread.Sleep(100);
+            }
+
+            // ステータス情報をフォームへ出力
+            progressForm.AppendStatus("Data spec: " + dataspec);
+            progressForm.AppendStatus("Total read count: " + nReadCount);
 
             var outputPath = Path.Combine(outputDir, "JV-" + dataspec + "-" + fromdate + "-" + strLastFileTimestamp + ".txt");
             var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
-
             streamWriter.WriteLine("JV DATASPEC:" + dataspec + " FROMDATE:" + fromdate + " LASTFILETIMESTAMP:" + strLastFileTimestamp);
-            JVReadToTxt(jvLink, streamWriter);
 
-            Console.WriteLine(outputPath);
+            // JVReadToTxt 内で進捗情報を更新（例：現在の読み込み回数）
+            JVReadToTxt(jvLink, streamWriter, progressForm);
+
+            // 読み込み完了後、フォームに完了メッセージを表示
+            progressForm.AppendStatus("Finished JVReadToTxt.");
+            progressForm.AppendStatus("Output file: " + outputPath);
+
+            // 進捗フォームを閉じる
+            if (progressForm.InvokeRequired)
+            {
+                progressForm.Invoke(new Action(() => progressForm.Close()));
+            }
+            else
+            {
+                progressForm.Close();
+            }
+            progressThread.Join();
 
             streamWriter.Close();
             jvLink.JVClose();
@@ -181,6 +279,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             Thread.Sleep(wait);
         }
 
+        // JVRT用（必要に応じてこちらもフォーム出力に変更可能）
         static void RunJVRT(JVDTLabLib.JVLink jvLink, string dataspec, string key, string outputDir, int wait = 1000)
         {
             var openStatus = jvLink.JVRTOpen(dataspec, key);
@@ -193,8 +292,9 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
 
             var outputPath = Path.Combine(outputDir, "JVRT-" + dataspec + "-" + key + ".txt");
             var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
-
             streamWriter.WriteLine("JVRT DATASPEC:" + dataspec + " KEY:" + key);
+
+            // JVRTの場合、ここではフォーム出力は行わず、通常通り処理
             JVReadToTxt(jvLink, streamWriter);
 
             Console.WriteLine(outputPath);
@@ -205,7 +305,8 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             Thread.Sleep(wait);
         }
 
-        static void JVReadToTxt(JVDTLabLib.JVLink jvLink, StreamWriter streamWriter)
+        // JVReadToTxt 内で進捗フォームがあれば読み込み状況を更新
+        static void JVReadToTxt(JVDTLabLib.JVLink jvLink, StreamWriter streamWriter, ProgressForm progressForm = null)
         {
             var nBuffSize = 110000;                         // JVRead: データ格納バッファサイズ
             var nNameSize = 256;                            // JVRead: ファイル名サイズ
@@ -220,7 +321,11 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             do
             {
                 readStatus = jvLink.JVRead(out strBuff, out nBuffSize, out strFileName);
-                Console.Error.Write("Read status: " + readStatus.ToString() + "\r");
+
+                // 進捗フォームがある場合、現在の読み込み件数を更新し、ステータスを出力
+                progressForm?.UpdateProgress(currentReadCount);
+                // progressForm?.AppendStatus($"Read status: {readStatus}, Current read count: {currentReadCount}");
+
                 switch (readStatus)
                 {
                     case 0: // 全ファイル読み込み終了
@@ -228,7 +333,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         break;
                     case -1: // ファイル切り替わり
                         currentReadCount++;
-                        Console.Error.Write("Current read count: " + currentReadCount.ToString() + "\r");
                         break;
                     case -3: // ダウンロード中
                         break;
@@ -236,7 +340,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                         errorMessage = "JVInit が行われていません。";
                         flg_exit = true;
                         break;
-                    case -203: // JVOpen されてない
+                    case -203: // JVOpen されていない
                         errorMessage = "JVOpen が行われていません。";
                         flg_exit = true;
                         break;
@@ -247,13 +351,11 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
                     case -402: // ダウンロードしたファイルが異常（ファイルサイズ＝０）
                     case -403: // ダウンロードしたファイルが異常（データ内容）
                         errorMessage = strFileName + "が開けません。削除します...";
-
                         int flg_delete = jvLink.JVFiledelete(strFileName);
                         if (flg_delete == 0)
                             errorMessage += "削除に成功しました。";
                         else
                             errorMessage += "削除に失敗しました。";
-
                         flg_exit = true;
                         break;
                     case int ret when ret > 0:
@@ -263,12 +365,13 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             }
             while (!flg_exit);
 
+            // エラーメッセージはコンソール出力のままとする
             if (errorMessage != "")
             {
                 Console.Error.WriteLine(errorMessage);
             }
 
-            Console.Error.WriteLine($"Finished JVReadToTxt.");
+            progressForm?.AppendStatus("Finished JVReadToTxt.");
         }
     }
 }
