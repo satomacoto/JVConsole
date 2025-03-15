@@ -273,9 +273,6 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
         [STAThread]
         static void Main(string[] args)
         {
-            // コンソールの出力エンコーディングをUTF-8に設定（または必要に応じてShift_JIS等）
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-
             Parser.Default.ParseArguments<SetupOptions, JvOptions, JvrtOptions>(args)
                 .WithParsed<SetupOptions>(RunSetupOptions)
                 .WithParsed<JvOptions>(RunJvOptions)
