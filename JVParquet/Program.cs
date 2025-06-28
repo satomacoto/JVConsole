@@ -26,71 +26,17 @@ static async Task<int> RunJVParquetAsync(Options options)
 {
     try
     {
-        // 出力ディレクトリの作成
-        if (!Directory.Exists(options.OutputDir))
-        {
-            Directory.CreateDirectory(options.OutputDir);
-        }
-
-        // スキップするレコード種別のセット
-        var skipRecordSpecs = new HashSet<string>();
-        if (!string.IsNullOrEmpty(options.SkipRecordSpec))
-        {
-            skipRecordSpecs = new HashSet<string>(options.SkipRecordSpec.Split(','));
-        }
-
-        // 入力ファイル名からプレフィックスを生成
+        ValidateAndCreateOutputDirectory(options.OutputDir);
+        
+        var skipRecordSpecs = ParseSkipRecordSpecs(options.SkipRecordSpec);
         var inputFileName = Path.GetFileNameWithoutExtension(options.InputPath);
         
-        // コンバーターの初期化
-        var converter = new JVDataParquetConverter(options.OutputDir, inputFileName);
-
-        // 入力ファイルの処理
-        Console.WriteLine($"Processing: {options.InputPath}");
+        await using var converter = new JVDataParquetConverter(options.OutputDir, inputFileName);
         
-        using var reader = new StreamReader(options.InputPath);
-        
-        string? line;
-        int lineCount = 0;
-        int recordCount = 0;
-
-        while ((line = reader.ReadLine()) != null)
-        {
-            lineCount++;
-
-            // 空行またはヘッダー行をスキップ
-            if (string.IsNullOrEmpty(line) || line.StartsWith("JV"))
-            {
-                continue;
-            }
-
-            // レコード種別の取得（最初の2文字）
-            if (line.Length < 2)
-            {
-                continue;
-            }
-
-            string recordSpec = line.Substring(0, 2);
-
-            // スキップ対象のレコード種別の場合
-            if (skipRecordSpecs.Contains(recordSpec))
-            {
-                continue;
-            }
-
-            // レコードの処理
-            await converter.ProcessRecordAsync(line);
-            recordCount++;
-
-            // 進捗表示
-            if (recordCount % 1000 == 0)
-            {
-                Console.WriteLine($"Processed {recordCount} records...");
-            }
-        }
-
-        // 最終的な書き込みとクローズ
-        await converter.DisposeAsync();
+        var (lineCount, recordCount) = await ProcessFileAsync(
+            options.InputPath, 
+            converter, 
+            skipRecordSpecs);
 
         Console.WriteLine($"Completed! Processed {recordCount} records from {lineCount} lines.");
         Console.WriteLine($"Output directory: {options.OutputDir}");
@@ -102,6 +48,77 @@ static async Task<int> RunJVParquetAsync(Options options)
         Console.Error.WriteLine($"Error: {ex.Message}");
         Console.Error.WriteLine(ex.StackTrace);
         return 1;
+    }
+}
+
+static void ValidateAndCreateOutputDirectory(string outputDir)
+{
+    if (!Directory.Exists(outputDir))
+    {
+        Directory.CreateDirectory(outputDir);
+    }
+}
+
+static HashSet<string> ParseSkipRecordSpecs(string? skipRecordSpec)
+{
+    if (string.IsNullOrEmpty(skipRecordSpec))
+        return new HashSet<string>();
+    
+    return new HashSet<string>(skipRecordSpec.Split(','));
+}
+
+static async Task<(int lineCount, int recordCount)> ProcessFileAsync(
+    string inputPath,
+    JVDataParquetConverter converter,
+    HashSet<string> skipRecordSpecs)
+{
+    Console.WriteLine($"Processing: {inputPath}");
+    
+    using var reader = new StreamReader(inputPath);
+    
+    int lineCount = 0;
+    int recordCount = 0;
+    string? line;
+
+    while ((line = reader.ReadLine()) != null)
+    {
+        lineCount++;
+
+        if (ShouldSkipLine(line))
+            continue;
+
+        var recordSpec = line.Substring(0, Constants.RecordSpecLength);
+        
+        if (skipRecordSpecs.Contains(recordSpec))
+            continue;
+
+        var result = await converter.ProcessRecordAsync(line);
+        if (result.IsSuccess)
+        {
+            recordCount++;
+            ReportProgressIfNeeded(recordCount);
+        }
+        else
+        {
+            Console.WriteLine($"Warning: Failed to process line {lineCount}: {result.Error}");
+        }
+    }
+
+    return (lineCount, recordCount);
+}
+
+static bool ShouldSkipLine(string? line)
+{
+    return string.IsNullOrEmpty(line) || 
+           line.StartsWith("JV") || 
+           line.Length < Constants.RecordSpecLength;
+}
+
+static void ReportProgressIfNeeded(int recordCount)
+{
+    if (recordCount % Constants.ProgressReportInterval == 0)
+    {
+        Console.WriteLine($"Processed {recordCount} records...");
     }
 }
 
