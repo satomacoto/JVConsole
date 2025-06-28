@@ -70,7 +70,7 @@ namespace JVParquet.Services
                 if (structInstance == null)
                     return Result<ParsedRecord>.Failure("Failed to create struct instance");
 
-                var flattenedData = ReflectionFlattener.FlattenStruct(structInstance);
+                var flattenedData = CachedReflectionFlattener.FlattenStruct(structInstance);
                 var makeDate = ExtractMakeDate(flattenedData);
 
                 return Result<ParsedRecord>.Success(new ParsedRecord
