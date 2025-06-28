@@ -124,16 +124,16 @@ namespace JVParquet
         {
             var info = new PartitionInfo();
 
-            // head.MakeDate.Year/Month/Dayを取得
-            if (record.TryGetValue("head.MakeDate.Year", out var year))
+            // head_MakeDate_Year/Month/Dayを取得（新しい命名規則）
+            if (record.TryGetValue("head_MakeDate_Year", out var year))
             {
                 info.Year = year?.ToString() ?? "unknown";
             }
-            if (record.TryGetValue("head.MakeDate.Month", out var month))
+            if (record.TryGetValue("head_MakeDate_Month", out var month))
             {
                 info.Month = month?.ToString() ?? "unknown";
             }
-            if (record.TryGetValue("head.MakeDate.Day", out var day))
+            if (record.TryGetValue("head_MakeDate_Day", out var day))
             {
                 info.Day = day?.ToString() ?? "unknown";
             }

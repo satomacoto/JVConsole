@@ -1,7 +1,5 @@
 using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using static JVData_Struct;
 
 namespace JVParquet
@@ -132,13 +130,8 @@ namespace JVParquet
                     Console.WriteLine($"Warning: SetDataB method not found for {structType.Name}");
                 }
 
-                // オブジェクトをJSONに変換してからフラット化
-                var json = JsonConvert.SerializeObject(structInstance);
-                var jObject = JObject.Parse(json);
-                
-                // フラット化された辞書を作成
-                var flattenedDict = new Dictionary<string, object?>();
-                FlattenJson(jObject, "", flattenedDict);
+                // リフレクションで直接フラット化
+                var flattenedDict = ReflectionFlattener.FlattenStruct(structInstance);
 
 
                 return flattenedDict;
@@ -150,52 +143,6 @@ namespace JVParquet
             }
         }
 
-        private void FlattenJson(JToken token, string prefix, Dictionary<string, object?> result)
-        {
-            switch (token.Type)
-            {
-                case JTokenType.Object:
-                    foreach (var property in token.Children<JProperty>())
-                    {
-                        var key = string.IsNullOrEmpty(prefix) ? property.Name : $"{prefix}.{property.Name}";
-                        FlattenJson(property.Value, key, result);
-                    }
-                    break;
-
-                case JTokenType.Array:
-                    var array = (JArray)token;
-                    for (int i = 0; i < array.Count; i++)
-                    {
-                        var key = $"{prefix}[{i}]";
-                        FlattenJson(array[i], key, result);
-                    }
-                    break;
-
-                case JTokenType.Null:
-                    result[prefix] = null;
-                    break;
-
-                case JTokenType.Boolean:
-                    result[prefix] = token.Value<bool>();
-                    break;
-
-                case JTokenType.Integer:
-                    result[prefix] = token.Value<long>();
-                    break;
-
-                case JTokenType.Float:
-                    result[prefix] = token.Value<double>();
-                    break;
-
-                case JTokenType.String:
-                    result[prefix] = token.Value<string>();
-                    break;
-
-                default:
-                    result[prefix] = token.ToString();
-                    break;
-            }
-        }
 
         private async Task FlushBufferAsync(string recordSpec)
         {
