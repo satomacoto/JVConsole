@@ -22,11 +22,10 @@ namespace JVParquet
             _settings = settings;
             _recordParser = new RecordParser();
             _parquetWriter = new ParquetWriterManager(settings.OutputDirectory, settings.FilePrefix);
-            
-            Func<string, IEnumerable<Dictionary<string, object?>>, Task<Result>> flushAction = 
-                async (key, items) => await _parquetWriter.WriteRecordsAsync(key, items);
-            
-            _bufferManager = new BufferManager<Dictionary<string, object?>>(settings, flushAction);
+            _bufferManager = new BufferManager<Dictionary<string, object?>>(
+                settings,
+                async (key, items) => await _parquetWriter.WriteRecordsAsync(key, items)
+            );
         }
 
         public async Task<Result> ProcessRecordAsync(string line)

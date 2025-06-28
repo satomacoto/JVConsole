@@ -1,8 +1,6 @@
 ﻿using System.Text;
 using CommandLine;
 using JVParquet;
-using JVParquet.Configuration;
-using JVParquet.Core;
 
 // Shift-JISエンコーディングを登録
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -33,32 +31,16 @@ static async Task<int> RunJVParquetAsync(Options options)
         var skipRecordSpecs = ParseSkipRecordSpecs(options.SkipRecordSpec);
         var inputFileName = Path.GetFileNameWithoutExtension(options.InputPath);
         
-        // Create settings
-        var settings = new ParquetSettings
-        {
-            OutputDirectory = options.OutputDir,
-            FilePrefix = inputFileName,
-            BatchSize = options.BatchSize ?? Constants.DefaultBatchSize
-        };
+        await using var converter = new JVDataParquetConverter(options.OutputDir, inputFileName);
         
-        await using var converter = new JVDataParquetConverter(settings);
-        
-        // Use sequential processing
         var (lineCount, recordCount) = await ProcessFileAsync(
             options.InputPath, 
             converter, 
             skipRecordSpecs);
-        
+
         Console.WriteLine($"Completed! Processed {recordCount} records from {lineCount} lines.");
-        var result = Result.Success();
-
-        if (!result.IsSuccess)
-        {
-            Console.Error.WriteLine($"Processing failed: {result.Error}");
-            return 1;
-        }
-
         Console.WriteLine($"Output directory: {options.OutputDir}");
+
         return 0;
     }
     catch (Exception ex)
@@ -84,7 +66,6 @@ static HashSet<string> ParseSkipRecordSpecs(string? skipRecordSpec)
     
     return new HashSet<string>(skipRecordSpec.Split(','));
 }
-
 
 static async Task<(int lineCount, int recordCount)> ProcessFileAsync(
     string inputPath,
@@ -184,9 +165,6 @@ namespace JVParquet
 
         [Option('s', "skipRecordSpec", Required = false, HelpText = "Comma-separated list of record specifications to skip")]
         public string? SkipRecordSpec { get; set; }
-        
-        [Option('b', "batchSize", Required = false, HelpText = "Batch size for record processing")]
-        public int? BatchSize { get; set; }
     }
 
     [Verb("read", HelpText = "Read and analyze Parquet files")]

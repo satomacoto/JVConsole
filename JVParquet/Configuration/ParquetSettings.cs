@@ -7,6 +7,7 @@ namespace JVParquet.Configuration
         public string FilePrefix { get; set; } = "data";
         public bool EnableCompression { get; set; } = true;
         public string CompressionType { get; set; } = "Snappy";
+        public int MaxParallelism { get; set; } = Environment.ProcessorCount;
         public bool EnableStatistics { get; set; } = true;
     }
 }

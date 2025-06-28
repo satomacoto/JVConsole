@@ -215,7 +215,6 @@ namespace JVParquet
             return Path.Combine(partitionPath, fileName);
         }
 
-
         public Task<Result> CloseAsync()
         {
             try
