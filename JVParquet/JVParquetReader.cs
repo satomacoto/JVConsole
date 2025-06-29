@@ -10,6 +10,30 @@ namespace JVParquet
 {
     public class JVParquetReader
     {
+        // 各レコードタイプのPython定義でのindex_cols
+        private static readonly Dictionary<string, List<string>> RecordIndexMapping = new()
+        {
+            ["RA"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["SE"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum", "Umaban", "KettoNum" },
+            ["HR"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O1"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O2"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O3"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O4"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O5"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["O6"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["H1"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["H6"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["CK"] = new() { "ChokyoDate.Year", "ChokyoDate.Month", "ChokyoDate.Day", "ChokyoshiCode", "JyoCD" },
+            ["WC"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum", "id.Umaban" },
+            ["WF"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["UM"] = new() { "KettoNum" },
+            ["SK"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum" },
+            ["HN"] = new() { "HansyokuFNum", "KettoNum", "BirthDate.Year" },
+            ["BT"] = new() { "HansyokuNum" },
+            ["JG"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Umaban", "KettoNum" },
+            ["HC"] = new() { "id.Year", "id.MonthDay", "id.JyoCD", "id.Kaiji", "id.Nichiji", "id.RaceNum", "id.Umaban" }
+        };
         public static async Task ReadParquetFileAsync(string filePath, int maxRows = 10)
         {
             try
@@ -22,6 +46,16 @@ namespace JVParquet
 
                 // ファイルのメタデータを表示
                 Console.WriteLine($"Row Groups: {parquetReader.RowGroupCount}");
+                
+                // カスタムメタデータを表示
+                if (parquetReader.CustomMetadata != null && parquetReader.CustomMetadata.Count > 0)
+                {
+                    Console.WriteLine("\nCustom Metadata:");
+                    foreach (var kvp in parquetReader.CustomMetadata)
+                    {
+                        Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
+                    }
+                }
                 Console.WriteLine();
 
                 // スキーマ情報を表示
@@ -101,7 +135,7 @@ namespace JVParquet
 
         public static async Task AnalyzeParquetDirectoryAsync(string directory, string recordSpec = "CK")
         {
-            Console.WriteLine($"Analyzing Parquet files for record spec: {recordSpec}");
+            Console.WriteLine($"# {recordSpec}レコードの分析");
             Console.WriteLine(new string('=', 80));
 
             var parquetFiles = Directory.GetFiles(directory, "*.parquet", SearchOption.AllDirectories)
@@ -114,36 +148,83 @@ namespace JVParquet
                 return;
             }
 
-            foreach (var file in parquetFiles)
+            var file = parquetFiles.First();
+            Console.WriteLine($"\nファイル: {Path.GetFileName(file)}");
+            
+            var columns = await GetParquetColumnsAsync(file);
+            
+            // Python定義のindex_colsとの対応を分析
+            if (RecordIndexMapping.ContainsKey(recordSpec))
             {
-                Console.WriteLine($"\nFile: {file}");
-                var columns = await GetParquetColumnsAsync(file);
+                Console.WriteLine("\n## インデックスカラムの対応");
+                Console.WriteLine("| Python定義 | Parquetカラム名 | 存在 |");
+                Console.WriteLine("|------------|----------------|------|");
                 
-                // head関連のカラムを探す
-                var headColumns = columns.Where(c => c.StartsWith("head", StringComparison.OrdinalIgnoreCase)).ToList();
-                
-                if (headColumns.Any())
+                var pythonIndexCols = RecordIndexMapping[recordSpec];
+                foreach (var pyCol in pythonIndexCols)
                 {
-                    Console.WriteLine("Found head columns:");
-                    foreach (var col in headColumns)
+                    // 完全一致を探す
+                    if (columns.Contains(pyCol))
                     {
-                        Console.WriteLine($"  - {col}");
+                        Console.WriteLine($"| {pyCol} | {pyCol} | ✓ |");
+                    }
+                    else
+                    {
+                        // ドットをアンダースコアに変換したパターンを探す
+                        var underscored = pyCol.Replace(".", "_");
+                        if (columns.Contains(underscored))
+                        {
+                            Console.WriteLine($"| {pyCol} | {underscored} | ✓ |");
+                        }
+                        else
+                        {
+                            // 類似のカラムを探す
+                            var similarColumn = FindSimilarColumn(pyCol, columns);
+                            if (similarColumn != null)
+                            {
+                                Console.WriteLine($"| {pyCol} | {similarColumn} | ✓ |");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"| {pyCol} | - | ✗ |");
+                            }
+                        }
                     }
                 }
-                else
-                {
-                    Console.WriteLine("No head columns found!");
-                    Console.WriteLine("First 10 columns:");
-                    foreach (var col in columns.Take(10))
-                    {
-                        Console.WriteLine($"  - {col}");
-                    }
-                }
-
-                // 最初の数行を読んで実際の値を確認
-                await ReadParquetFileAsync(file, 1);
-                break; // 最初のファイルだけ詳細表示
             }
+            
+            // 実際のカラムを表示
+            Console.WriteLine($"\n## 実際のカラム（最初の30個）");
+            int index = 1;
+            foreach (var col in columns.Take(30))
+            {
+                Console.WriteLine($"{index}. `{col}`");
+                index++;
+            }
+            
+            if (columns.Count > 30)
+            {
+                Console.WriteLine($"\n... 他 {columns.Count - 30} カラム");
+            }
+            
+            Console.WriteLine();
+        }
+
+        private static string? FindSimilarColumn(string pythonCol, List<string> parquetColumns)
+        {
+            // ドットを除去してマッチングを試みる
+            var normalizedPyCol = pythonCol.Replace(".", "").ToLower();
+            
+            foreach (var parquetCol in parquetColumns)
+            {
+                var normalizedParquetCol = parquetCol.Replace("_", "").ToLower();
+                if (normalizedParquetCol.Contains(normalizedPyCol) || normalizedPyCol.Contains(normalizedParquetCol))
+                {
+                    return parquetCol;
+                }
+            }
+            
+            return null;
         }
     }
 }

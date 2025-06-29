@@ -2,6 +2,7 @@ using Parquet;
 using Parquet.Data;
 using Parquet.Schema;
 using Parquet.File;
+using System.Text.Json;
 
 namespace JVParquet
 {
@@ -106,6 +107,25 @@ namespace JVParquet
                 // ParquetWriterの作成
                 var stream = File.OpenWrite(filePath);
                 var writer = await ParquetWriter.CreateAsync(schema, stream);
+
+                // メタデータの設定
+                if (RecordIndexMapping.HasIndexColumns(recordSpec))
+                {
+                    var indexColumns = RecordIndexMapping.GetIndexColumns(recordSpec);
+                    if (indexColumns != null)
+                    {
+                        // Pandasが期待する形式でメタデータを設定
+                        var metadata = new Dictionary<string, string>
+                        {
+                            ["pandas_index_columns"] = JsonSerializer.Serialize(indexColumns),
+                            ["record_spec"] = recordSpec,
+                            ["created_by"] = "JVParquet.NET"
+                        };
+                        
+                        // ParquetWriterにメタデータを設定
+                        writer.CustomMetadata = metadata;
+                    }
+                }
 
                 _writers[recordSpec] = new WriterContext
                 {
