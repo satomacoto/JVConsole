@@ -29,16 +29,19 @@ namespace JVParquet
             ["H1"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum" },
             ["H6"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum" },
             
+            // マスター系レコード (RECORDSPECS_MASTER)
+            ["UM"] = new() { "KettoNum" },                    // 競走馬マスタ
+            ["KS"] = new() { "KisyuCode" },                   // 騎手マスタ
+            ["CH"] = new() { "ChokyosiCode" },                // 調教師マスタ
+            ["BR"] = new() { "BreederCode" },                 // 生産者マスタ
+            ["BN"] = new() { "BanusiCode" },                  // 馬主マスタ
+            ["RC"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum", "TokuNum", "SyubetuCD", "Kyori", "TrackCD" }, // レコードマスタ
+            ["HN"] = new() { "HansyokuNum" },                 // 繁殖馬マスタ（注：Pythonの定義と異なる可能性あり）
+            ["SK"] = new() { "KettoNum" },                    // 産駒マスタ
+            ["BT"] = new() { "HansyokuNum" },                 // 系統情報
+            
             // その他
-            ["UM"] = new() { "KettoNum" },
-            ["HN"] = new() { "HansyokuFNum", "KettoNum", "BirthDate_Year" },
-            ["BT"] = new() { "HansyokuNum" },
-            ["SK"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum" },
             ["YS"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum" },
-            ["CH"] = new() { "ChokyosiCode" },
-            ["BR"] = new() { "BreederCode" },
-            ["BN"] = new() { "BanusiCode" },
-            ["KS"] = new() { "KisyuCode" },
             
             // 調教・競走関連（注意：実際のカラム名を要確認）
             ["WC"] = new() { "id_Year", "id_MonthDay", "id_JyoCD", "id_Kaiji", "id_Nichiji", "id_RaceNum", "id_Umaban" },

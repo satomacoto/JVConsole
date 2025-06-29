@@ -111,7 +111,7 @@ df_race = load_jv_parquet('output/RA/year=2024/month=12/day=01/data.parquet')
 
 ## レコードタイプとインデックスカラム
 
-主要なレコードタイプとそのインデックスカラム：
+### レース関連レコード
 
 | レコード | 説明 | インデックスカラム |
 |---------|------|------------------|
@@ -120,7 +120,20 @@ df_race = load_jv_parquet('output/RA/year=2024/month=12/day=01/data.parquet')
 | HR | 払戻 | id_Year, id_MonthDay, id_JyoCD, id_Kaiji, id_Nichiji, id_RaceNum |
 | O1-O6 | オッズ | id_Year, id_MonthDay, id_JyoCD, id_Kaiji, id_Nichiji, id_RaceNum |
 | H1,H6 | 票数 | id_Year, id_MonthDay, id_JyoCD, id_Kaiji, id_Nichiji, id_RaceNum |
-| UM | 馬マスタ | KettoNum |
+
+### マスター系レコード (RECORDSPECS_MASTER)
+
+| レコード | 説明 | インデックスカラム |
+|---------|------|------------------|
+| UM | 競走馬マスタ | KettoNum |
+| KS | 騎手マスタ | KisyuCode |
+| CH | 調教師マスタ | ChokyosiCode |
+| BR | 生産者マスタ | BreederCode |
+| BN | 馬主マスタ | BanusiCode |
+| RC | レコードマスタ | id_Year, id_MonthDay, id_JyoCD, id_Kaiji, id_Nichiji, id_RaceNum, TokuNum, SyubetuCD, Kyori, TrackCD |
+| HN | 繁殖馬マスタ | HansyokuNum |
+| SK | 産駒マスタ | KettoNum |
+| BT | 系統情報 | HansyokuNum |
 
 ## ビルド方法
 
