@@ -206,13 +206,13 @@ namespace JVDownloader
             [Option("dataspec", Required = true, Separator = ',', HelpText = @"dataspec. see http://jra-van.jp/dlb/sdv/sdk.html, http://jra-van.jp/dlb/sdv/sdk/JV-Data470.pdf pp.47-48
 
 option = 1
-TOKU,RACE,DIFN,BLOD,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING
+TOKU,RACE,DIFN,BLDN,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING
 
 option = 2
-TOKU,RACE,TCOV,RCOV,SNPN
+TOKU,RACE,TCVN,RCVN,SNPN
 
 option = 3,4
-TOKU,RACE,DIFN,BLOD,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING")]
+TOKU,RACE,DIFN,BLDN,SNPN,SLOP,WOOD,YSCH,HOSN,HOYU,COMM,MING")]
             public IEnumerable<string> Dataspec { get; set; }
 
             [Option("fromdate", Required = false, Default = "20211101000000", HelpText = @"fromdate. YYYYMMDDhhmmss or YYYYMMDDhhmmss-YYYYMMDDhhmmss.
