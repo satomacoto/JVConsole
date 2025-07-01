@@ -287,6 +287,98 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVClose();
         }
 
+        // 日付範囲を月ごとに分割するメソッド
+        static List<string> SplitDateRangeByMonth(string fromdate)
+        {
+            var result = new List<string>();
+            
+            // 日付範囲形式（YYYYMMDDHHMMSS-YYYYMMDDHHMMSS）の場合
+            if (fromdate.Contains("-"))
+            {
+                var parts = fromdate.Split('-');
+                if (parts.Length != 2) 
+                {
+                    result.Add(fromdate);
+                    return result;
+                }
+                
+                var startDateStr = parts[0];
+                var endDateStr = parts[1];
+                
+                // YYYYMMDDHHMMSSフォーマットから日付を解析
+                if (startDateStr.Length < 8 || endDateStr.Length < 8)
+                {
+                    result.Add(fromdate);
+                    return result;
+                }
+                
+                try
+                {
+                    var startYear = int.Parse(startDateStr.Substring(0, 4));
+                    var startMonth = int.Parse(startDateStr.Substring(4, 2));
+                    var startDay = int.Parse(startDateStr.Substring(6, 2));
+                    var startTime = startDateStr.Length >= 14 ? startDateStr.Substring(8, 6) : "000000";
+                    
+                    var endYear = int.Parse(endDateStr.Substring(0, 4));
+                    var endMonth = int.Parse(endDateStr.Substring(4, 2));
+                    var endDay = int.Parse(endDateStr.Substring(6, 2));
+                    var endTime = endDateStr.Length >= 14 ? endDateStr.Substring(8, 6) : "235959";
+                    
+                    var startDate = new DateTime(startYear, startMonth, startDay);
+                    var endDate = new DateTime(endYear, endMonth, endDay);
+                    
+                    // 期間が1ヶ月以上の場合のみ分割する
+                    if (endDate.Subtract(startDate).TotalDays < 30)
+                    {
+                        result.Add(fromdate);
+                        return result;
+                    }
+                    
+                    // 月ごとに分割
+                    var currentDate = startDate;
+                    while (currentDate < endDate)
+                    {
+                        var rangeStart = currentDate;
+                        var rangeEnd = currentDate.AddMonths(1);
+                        
+                        // 次の月の1日に設定
+                        if (rangeStart.Day != 1)
+                        {
+                            rangeEnd = new DateTime(rangeStart.Year, rangeStart.Month, 1).AddMonths(1);
+                        }
+                        else
+                        {
+                            rangeEnd = new DateTime(rangeStart.Year, rangeStart.Month, 1).AddMonths(1);
+                        }
+                        
+                        // 終了日が全体の終了日を超える場合
+                        if (rangeEnd > endDate)
+                            rangeEnd = endDate;
+                        
+                        // 日付範囲文字列を作成
+                        var rangeStr = $"{rangeStart:yyyyMMdd}{(rangeStart == startDate ? startTime : "000000")}-" +
+                                      $"{rangeEnd:yyyyMMdd}{(rangeEnd == endDate ? endTime : "000000")}";
+                        result.Add(rangeStr);
+                        
+                        // 次の期間の開始を設定
+                        currentDate = rangeEnd;
+                    }
+                }
+                catch
+                {
+                    // 解析エラーの場合は元の文字列をそのまま返す
+                    result.Add(fromdate);
+                }
+            }
+            else
+            {
+                // 単一日付の場合はそのまま返す
+                result.Add(fromdate);
+            }
+            
+            return result;
+        }
+
         static void RunJvOptions(JvOptions opts)
         {
             if (string.IsNullOrWhiteSpace(opts.Fromdate))
@@ -303,7 +395,13 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
-                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir, opts.Wait);
+                // Fromdateを解析して月ごとに分割
+                var dateRanges = SplitDateRangeByMonth(opts.Fromdate);
+                foreach (var dateRange in dateRanges)
+                {
+                    Console.WriteLine($"処理期間: {dateRange}");
+                    RunJV(jvLink, dataspec, dateRange, opts.Option, opts.OutputDir, opts.Wait);
+                }
             }
         }
 
