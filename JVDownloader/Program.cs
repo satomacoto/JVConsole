@@ -287,95 +287,86 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVClose();
         }
 
-        // 日付範囲を月ごとに分割するメソッド
         static List<string> SplitDateRangeByMonth(string fromdate)
         {
             var result = new List<string>();
-            
-            // 日付範囲形式（YYYYMMDDHHMMSS-YYYYMMDDHHMMSS）の場合
-            if (fromdate.Contains("-"))
+
+            // ハイフンなし＝単一日付はそのまま返却
+            if (!fromdate.Contains("-"))
             {
-                var parts = fromdate.Split('-');
-                if (parts.Length != 2) 
+                result.Add(fromdate);
+                return result;
+            }
+
+            // start/end を 1 回だけ分割
+            var parts = fromdate.Split(new[] { '-' }, 2);
+            if (parts.Length != 2)
+            {
+                result.Add(fromdate);
+                return result;
+            }
+
+            var startStr = parts[0];
+            var endStr = parts[1];
+
+            // 最低限の日付長さチェック
+            if (startStr.Length < 8 || endStr.Length < 8)
+            {
+                result.Add(fromdate);
+                return result;
+            }
+
+            try
+            {
+                // 開始日時を手動パース
+                int sy = int.Parse(startStr.Substring(0, 4));
+                int sm = int.Parse(startStr.Substring(4, 2));
+                int sd = int.Parse(startStr.Substring(6, 2));
+                int sh = startStr.Length >= 14 ? int.Parse(startStr.Substring(8, 2)) : 0;
+                int smin = startStr.Length >= 14 ? int.Parse(startStr.Substring(10, 2)) : 0;
+                int ss = startStr.Length >= 14 ? int.Parse(startStr.Substring(12, 2)) : 0;
+                var start = new DateTime(sy, sm, sd, sh, smin, ss);
+
+                // 終了日時を手動パース
+                int ey = int.Parse(endStr.Substring(0, 4));
+                int em = int.Parse(endStr.Substring(4, 2));
+                int ed = int.Parse(endStr.Substring(6, 2));
+                int eh = endStr.Length >= 14 ? int.Parse(endStr.Substring(8, 2)) : 23;
+                int emin = endStr.Length >= 14 ? int.Parse(endStr.Substring(10, 2)) : 59;
+                int es = endStr.Length >= 14 ? int.Parse(endStr.Substring(12, 2)) : 59;
+                var end = new DateTime(ey, em, ed, eh, emin, es);
+
+                // 1ヶ月未満なら分割せずに元の文字列を返す
+                if ((end - start).TotalDays < 30)
                 {
                     result.Add(fromdate);
                     return result;
                 }
-                
-                var startDateStr = parts[0];
-                var endDateStr = parts[1];
-                
-                // YYYYMMDDHHMMSSフォーマットから日付を解析
-                if (startDateStr.Length < 8 || endDateStr.Length < 8)
+
+                // 月単位で分割
+                var current = start;
+                while (current < end)
                 {
-                    result.Add(fromdate);
-                    return result;
-                }
-                
-                try
-                {
-                    var startYear = int.Parse(startDateStr.Substring(0, 4));
-                    var startMonth = int.Parse(startDateStr.Substring(4, 2));
-                    var startDay = int.Parse(startDateStr.Substring(6, 2));
-                    var startTime = startDateStr.Length >= 14 ? startDateStr.Substring(8, 6) : "000000";
-                    
-                    var endYear = int.Parse(endDateStr.Substring(0, 4));
-                    var endMonth = int.Parse(endDateStr.Substring(4, 2));
-                    var endDay = int.Parse(endDateStr.Substring(6, 2));
-                    var endTime = endDateStr.Length >= 14 ? endDateStr.Substring(8, 6) : "235959";
-                    
-                    var startDate = new DateTime(startYear, startMonth, startDay);
-                    var endDate = new DateTime(endYear, endMonth, endDay);
-                    
-                    // 期間が1ヶ月以上の場合のみ分割する
-                    if (endDate.Subtract(startDate).TotalDays < 30)
-                    {
-                        result.Add(fromdate);
-                        return result;
-                    }
-                    
-                    // 月ごとに分割
-                    var currentDate = startDate;
-                    while (currentDate < endDate)
-                    {
-                        var rangeStart = currentDate;
-                        var rangeEnd = currentDate.AddMonths(1);
-                        
-                        // 次の月の1日に設定
-                        if (rangeStart.Day != 1)
-                        {
-                            rangeEnd = new DateTime(rangeStart.Year, rangeStart.Month, 1).AddMonths(1);
-                        }
-                        else
-                        {
-                            rangeEnd = new DateTime(rangeStart.Year, rangeStart.Month, 1).AddMonths(1);
-                        }
-                        
-                        // 終了日が全体の終了日を超える場合
-                        if (rangeEnd > endDate)
-                            rangeEnd = endDate;
-                        
-                        // 日付範囲文字列を作成
-                        var rangeStr = $"{rangeStart:yyyyMMdd}{(rangeStart == startDate ? startTime : "000000")}-" +
-                                      $"{rangeEnd:yyyyMMdd}{(rangeEnd == endDate ? endTime : "000000")}";
-                        result.Add(rangeStr);
-                        
-                        // 次の期間の開始を設定
-                        currentDate = rangeEnd;
-                    }
-                }
-                catch
-                {
-                    // 解析エラーの場合は元の文字列をそのまま返す
-                    result.Add(fromdate);
+                    // 当月の次月1日0時を取得
+                    var nextMonth = new DateTime(current.Year, current.Month, 1).AddMonths(1);
+
+                    // チャンクの終了は nextMonth か end の早い方
+                    var chunkEnd = nextMonth < end ? nextMonth : end;
+
+                    // 文字列化して追加
+                    var s = current.ToString("yyyyMMddHHmmss");
+                    var e = chunkEnd.ToString("yyyyMMddHHmmss");
+                    result.Add($"{s}-{e}");
+
+                    current = chunkEnd;
                 }
             }
-            else
+            catch
             {
-                // 単一日付の場合はそのまま返す
+                // 何か失敗したら元の文字列を返す
                 result.Add(fromdate);
             }
-            
+
             return result;
         }
 
@@ -395,13 +386,7 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             jvLink.JVInit(Sid);
             foreach (var dataspec in opts.Dataspec)
             {
-                // Fromdateを解析して月ごとに分割
-                var dateRanges = SplitDateRangeByMonth(opts.Fromdate);
-                foreach (var dateRange in dateRanges)
-                {
-                    Console.WriteLine($"処理期間: {dateRange}");
-                    RunJV(jvLink, dataspec, dateRange, opts.Option, opts.OutputDir, opts.Wait);
-                }
+                RunJV(jvLink, dataspec, opts.Fromdate, opts.Option, opts.OutputDir, opts.Wait);
             }
         }
 
@@ -430,60 +415,68 @@ YYYY:開催年, MM:開催月, DD:開催日, JJ:場コード, KK:回次, HH:日�
             var nDownloadCount = 0;         // JVOpen: 総ダウンロードファイル数
             var strLastFileTimestamp = "";  // JVOpen: 最新ファイルのタイムスタンプ
 
-            var openStatus = jvLink.JVOpen(dataspec, fromdate, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
+            // 日付範囲を月ごとに分割
+            var dateRanges = SplitDateRangeByMonth(fromdate);
 
-            if (openStatus != 0)
+            foreach (var dateRange in dateRanges)
             {
-                // openStatus のエラーとして、コード表に基づく詳細メッセージをログ出力
-                Logger.LogError(Logger.GetOpenStatusErrorMessage(openStatus), openStatus, "openStatus");
-                return;
+                Console.WriteLine($"処理期間: {dateRange}");
+
+                var openStatus = jvLink.JVOpen(dataspec, dateRange, option, ref nReadCount, ref nDownloadCount, out strLastFileTimestamp);
+
+                if (openStatus != 0)
+                {
+                    // openStatus のエラーとして、コード表に基づく詳細メッセージをログ出力
+                    Logger.LogError(Logger.GetOpenStatusErrorMessage(openStatus), openStatus, "openStatus");
+                    return;
+                }
+
+                // プログレスフォーム作成（総ファイル数 nReadCount を最大値に設定）
+                ProgressForm progressForm = null;
+                Thread progressThread = new Thread(() =>
+                {
+                    progressForm = new ProgressForm(nReadCount);
+                    Application.Run(progressForm);
+                });
+                progressThread.SetApartmentState(ApartmentState.STA);
+                progressThread.Start();
+                // フォームが表示されるまで待機
+                while (progressForm == null || !progressForm.IsHandleCreated)
+                {
+                    Thread.Sleep(100);
+                }
+
+                // ステータス情報をフォームへ出力
+                progressForm.AppendStatus("Data spec: " + dataspec);
+                progressForm.AppendStatus("Total read count: " + nReadCount);
+
+                var outputPath = Path.Combine(outputDir, "JV-" + dataspec + "-" + dateRange + "-" + strLastFileTimestamp + ".txt");
+                var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
+                streamWriter.WriteLine("JV DATASPEC:" + dataspec + " FROMDATE:" + dateRange + " LASTFILETIMESTAMP:" + strLastFileTimestamp);
+
+                // JVReadToTxt 内で進捗情報を更新（例：現在の読み込み回数）
+                JVReadToTxt(jvLink, streamWriter, progressForm);
+
+                // 読み込み完了後、フォームに完了メッセージを表示
+                progressForm.AppendStatus("Finished JVReadToTxt.");
+                progressForm.AppendStatus("Output file: " + outputPath);
+
+                // 進捗フォームを閉じる
+                if (progressForm.InvokeRequired)
+                {
+                    progressForm.Invoke(new Action(() => progressForm.Close()));
+                }
+                else
+                {
+                    progressForm.Close();
+                }
+                progressThread.Join();
+
+                Console.WriteLine(outputPath);
+                streamWriter.Close();
+                jvLink.JVClose();
             }
 
-            // プログレスフォーム作成（総ファイル数 nReadCount を最大値に設定）
-            ProgressForm progressForm = null;
-            Thread progressThread = new Thread(() =>
-            {
-                progressForm = new ProgressForm(nReadCount);
-                Application.Run(progressForm);
-            });
-            progressThread.SetApartmentState(ApartmentState.STA);
-            progressThread.Start();
-            // フォームが表示されるまで待機
-            while (progressForm == null || !progressForm.IsHandleCreated)
-            {
-                Thread.Sleep(100);
-            }
-
-            // ステータス情報をフォームへ出力
-            progressForm.AppendStatus("Data spec: " + dataspec);
-            progressForm.AppendStatus("Total read count: " + nReadCount);
-
-            var outputPath = Path.Combine(outputDir, "JV-" + dataspec + "-" + fromdate + "-" + strLastFileTimestamp + ".txt");
-            var streamWriter = new StreamWriter(outputPath, false, System.Text.Encoding.UTF8);
-            streamWriter.WriteLine("JV DATASPEC:" + dataspec + " FROMDATE:" + fromdate + " LASTFILETIMESTAMP:" + strLastFileTimestamp);
-
-            // JVReadToTxt 内で進捗情報を更新（例：現在の読み込み回数）
-            JVReadToTxt(jvLink, streamWriter, progressForm);
-
-            // 読み込み完了後、フォームに完了メッセージを表示
-            progressForm.AppendStatus("Finished JVReadToTxt.");
-            progressForm.AppendStatus("Output file: " + outputPath);
-
-            // 進捗フォームを閉じる
-            if (progressForm.InvokeRequired)
-            {
-                progressForm.Invoke(new Action(() => progressForm.Close()));
-            }
-            else
-            {
-                progressForm.Close();
-            }
-            progressThread.Join();
-
-            Console.WriteLine(outputPath);
-
-            streamWriter.Close();
-            jvLink.JVClose();
 
             Thread.Sleep(wait);
         }
