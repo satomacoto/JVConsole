@@ -13,7 +13,7 @@
 - [x] BN (JV_BN_BANUSI) - 馬主情報
 - [x] BR (JV_BR_BREEDER) - 生産者情報
 - [x] BT (JV_BT_KEITO) - 系統情報
-- [ ] CC (JV_CC_INFO) - コース情報変更
+- [x] CC (JV_CC_INFO) - コース変更
 - [ ] CH (JV_CH_CHOKYOSI) - 調教師情報
 - [ ] CK (JV_CK_CHAKU) - チャック情報
 - [ ] CS (JV_CS_COURSE) - コース情報

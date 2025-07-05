@@ -35,6 +35,9 @@ namespace JVParquet.TypeMapping
             // BTレコード（系統情報）
             RegisterMapping(new BTRecordTypeMapping());
             
+            // CCレコード（コース変更）
+            RegisterMapping(new CCRecordTypeMapping());
+            
             // 今後、各レコード種別のマッピングクラスを追加していく
         }
 
