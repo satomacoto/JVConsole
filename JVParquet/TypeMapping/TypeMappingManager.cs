@@ -26,6 +26,9 @@ namespace JVParquet.TypeMapping
             // AVレコード（出走取消・競走除外）
             RegisterMapping(new AVRecordTypeMapping());
             
+            // BNレコード（馬主マスタ）
+            RegisterMapping(new BNRecordTypeMapping());
+            
             // 今後、各レコード種別のマッピングクラスを追加していく
         }
 

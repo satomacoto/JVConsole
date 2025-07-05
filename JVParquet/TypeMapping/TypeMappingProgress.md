@@ -10,7 +10,7 @@
 
 ### A-C
 - [x] AV (JV_AV_INFO) - 出走取消・競走除外
-- [ ] BN (JV_BN_BANUSI) - 馬主情報
+- [x] BN (JV_BN_BANUSI) - 馬主情報
 - [ ] BR (JV_BR_BREEDER) - 生産者情報
 - [ ] BT (JV_BT_KEITO) - 血統情報
 - [ ] CC (JV_CC_INFO) - コース情報変更
