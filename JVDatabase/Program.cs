@@ -215,9 +215,9 @@ static async Task<int> RunInitAsync(InitOptions opts)
         var downloadArgs = new[]
         {
             "jv",
-            "--dataspec", string.Join("", opts.DataSpecs),
+            "--dataspec", string.Join(",", opts.DataSpecs),
             "--fromdate", $"{opts.StartDate}000000-{opts.EndDate}000000",
-            "--option", useSetupOption ? "4" : "3", // 期間指定の場合はoption 3を使用
+            "--option", useSetupOption ? "4" : "1", // 期間指定の場合はoption 3を使用
             "--outputDir", Path.Combine(opts.DatabasePath, "raw")
         };
         
@@ -244,6 +244,17 @@ static async Task<int> RunInitAsync(InitOptions opts)
         Directory.CreateDirectory(parquetDir);
         
         int convertedCount = 0;
+        var metadata = new DatabaseMetadata
+        {
+            CreatedAt = DateTime.UtcNow,
+            LastUpdated = DateTime.UtcNow,
+            StartDate = opts.StartDate,
+            EndDate = opts.EndDate,
+            DataSpecs = opts.DataSpecs.ToList(),
+            DatabasePath = opts.DatabasePath,
+            Version = "1.0.0"
+        };
+        
         foreach (var file in downloadedFiles)
         {
             var fileName = Path.GetFileName(file);
@@ -257,6 +268,26 @@ static async Task<int> RunInitAsync(InitOptions opts)
             {
                 convertedCount++;
                 Console.WriteLine($"  → 完了 ({elapsed.TotalSeconds:F1}秒)");
+                
+                // ファイル情報を抽出してメタデータに記録
+                var fileInfo = await ExtractJVFileInfoAsync(file);
+                if (fileInfo.HasValue)
+                {
+                    var (dataspec, lastfiletimestamp) = fileInfo.Value;
+                    if (!metadata.DataSpecStatuses.ContainsKey(dataspec))
+                    {
+                        metadata.DataSpecStatuses[dataspec] = new DataSpecStatus();
+                    }
+                    metadata.DataSpecStatuses[dataspec].LastFileTimestamp = lastfiletimestamp;
+                    metadata.DataSpecStatuses[dataspec].LastFileName = fileName;
+                    metadata.DataSpecStatuses[dataspec].LastUpdatedAt = DateTime.UtcNow;
+                }
+                
+                // 処理済みファイルリストに追加
+                if (!metadata.ProcessedFiles.Contains(fileName))
+                {
+                    metadata.ProcessedFiles.Add(fileName);
+                }
             }
             else
             {
@@ -267,16 +298,6 @@ static async Task<int> RunInitAsync(InitOptions opts)
         
         // 6. メタデータの保存
         Console.WriteLine("\n[3/3] メタデータを保存中...");
-        var metadata = new DatabaseMetadata
-        {
-            CreatedAt = DateTime.UtcNow,
-            LastUpdated = DateTime.UtcNow,
-            StartDate = opts.StartDate,
-            EndDate = opts.EndDate,
-            DataSpecs = opts.DataSpecs.ToList(),
-            DatabasePath = opts.DatabasePath,
-            Version = "1.0.0"
-        };
         
         var metadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(Path.Combine(metadataPath, "metadata.json"), metadataJson);
@@ -319,52 +340,68 @@ static async Task<int> RunUpdateAsync(UpdateOptions opts)
         Console.WriteLine($"最終更新日時: {metadata.LastUpdated:yyyy-MM-dd HH:mm:ss} UTC");
         
         // 更新期間の決定
-        var fromDate = metadata.EndDate;
         var toDate = opts.EndDate ?? DateTime.Now.ToString("yyyyMMdd");
+        var rawDir = Path.Combine(opts.DatabasePath, "raw");
         
-        Console.WriteLine($"\n[1/3] {fromDate}から{toDate}までの差分データをダウンロード中...");
+        // データ種別ごとに差分更新を実行
+        Console.WriteLine($"\n[1/3] 差分データをダウンロード中...");
+        var downloadedFiles = new List<string>();
         
-        var downloadArgs = new[]
+        foreach (var dataspec in metadata.DataSpecs)
         {
-            "jv",
-            "--dataspec", string.Join(",", metadata.DataSpecs),
-            "--fromdate", $"{fromDate}000000-{toDate}000000",
-            "--option", "1", // 通常データダウンロード
-            "--outputDir", Path.Combine(opts.DatabasePath, "raw")
-        };
-        
-        Console.WriteLine("※ JVDownloaderが自動的に期間を分割して処理します。");
-        Console.WriteLine("※ ダウンロード中は進捗が表示されます。しばらくお待ちください...");
-        
-        var downloadResult = await RunJVDownloaderAsync(string.Join(" ", downloadArgs), Path.Combine(opts.DatabasePath, "raw"));
-        if (downloadResult != 0)
-        {
-            Console.Error.WriteLine($"ダウンロードに失敗しました。");
-            return downloadResult;
+            Console.WriteLine($"\n  {dataspec}のデータを確認中...");
+            
+            // このデータ種別の最終タイムスタンプを取得
+            string fromDate = metadata.EndDate + "000000"; // デフォルト値
+            if (metadata.DataSpecStatuses.TryGetValue(dataspec, out var status) && !string.IsNullOrEmpty(status.LastFileTimestamp))
+            {
+                fromDate = status.LastFileTimestamp;
+                Console.WriteLine($"    最終タイムスタンプ: {fromDate}");
+            }
+            
+            var downloadArgs = new[]
+            {
+                "jv",
+                "--dataspec", dataspec,
+                "--fromdate", $"{fromDate}",
+                "--option", "1", // 通常データダウンロード
+                "--outputDir", rawDir
+            };
+            
+            var downloadResult = await RunJVDownloaderAsync(string.Join(" ", downloadArgs), rawDir);
+            if (downloadResult != 0)
+            {
+                Console.WriteLine($"    {dataspec}のダウンロードに失敗しました。");
+                continue;
+            }
+            
+            // ダウンロードしたファイルから最新のものを特定
+            var pattern = $"JV-{dataspec}-*.txt";
+            var specFiles = Directory.GetFiles(rawDir, pattern)
+                .Where(f => !metadata.ProcessedFiles.Contains(Path.GetFileName(f)))
+                .OrderBy(f => f)
+                .ToList();
+            
+            downloadedFiles.AddRange(specFiles);
+            Console.WriteLine($"    新規ファイル: {specFiles.Count}個");
         }
         
-        // 新しくダウンロードしたファイルの特定
-        var rawDir = Path.Combine(opts.DatabasePath, "raw");
-        var newFiles = Directory.GetFiles(rawDir, "JV-*.txt")
-            .Where(f => File.GetCreationTime(f) > metadata.LastUpdated)
-            .OrderBy(f => f)
-            .ToList();
-        
-        if (newFiles.Count == 0)
+        if (downloadedFiles.Count == 0)
         {
             Console.WriteLine("\n更新するデータがありません。");
             return 0;
         }
         
-        Console.WriteLine($"\n[2/3] {newFiles.Count}個の新しいファイルをParquet形式に変換中...");
+        Console.WriteLine($"\n[2/3] {downloadedFiles.Count}個の新しいファイルをParquet形式に変換中...");
         
         // Parquet変換
         var parquetDir = Path.Combine(opts.DatabasePath, "parquet");
         int convertedCount = 0;
-        foreach (var file in newFiles)
+        
+        foreach (var file in downloadedFiles)
         {
             var fileName = Path.GetFileName(file);
-            Console.WriteLine($"\n変換中: {convertedCount + 1}/{newFiles.Count} - {fileName}");
+            Console.WriteLine($"\n変換中: {convertedCount + 1}/{downloadedFiles.Count} - {fileName}");
             
             var skipSpecs = metadata.DataSpecs.Contains("H6") || metadata.DataSpecs.Contains("O6") 
                 ? new[] { "H6", "O6" } 
@@ -378,24 +415,57 @@ static async Task<int> RunUpdateAsync(UpdateOptions opts)
             {
                 convertedCount++;
                 Console.WriteLine($"  → 完了 ({elapsed.TotalSeconds:F1}秒)");
+                
+                // ファイル情報を抽出してメタデータを更新
+                var fileInfo = await ExtractJVFileInfoAsync(file);
+                if (fileInfo.HasValue)
+                {
+                    var (dataspec, lastfiletimestamp) = fileInfo.Value;
+                    if (!metadata.DataSpecStatuses.ContainsKey(dataspec))
+                    {
+                        metadata.DataSpecStatuses[dataspec] = new DataSpecStatus();
+                    }
+                    metadata.DataSpecStatuses[dataspec].LastFileTimestamp = lastfiletimestamp;
+                    metadata.DataSpecStatuses[dataspec].LastFileName = fileName;
+                    metadata.DataSpecStatuses[dataspec].LastUpdatedAt = DateTime.UtcNow;
+                }
+                
+                // 処理済みファイルリストに追加
+                if (!metadata.ProcessedFiles.Contains(fileName))
+                {
+                    metadata.ProcessedFiles.Add(fileName);
+                }
             }
             else
             {
                 Console.WriteLine($"  → 失敗 (エラーコード: {result})");
             }
         }
-        Console.WriteLine($"\n変換完了: {convertedCount}/{newFiles.Count}");
+        Console.WriteLine($"\n変換完了: {convertedCount}/{downloadedFiles.Count}");
         
         // メタデータの更新
         Console.WriteLine("\n[3/3] メタデータを更新中...");
         metadata.LastUpdated = DateTime.UtcNow;
         metadata.EndDate = toDate;
         
+        // 古い処理済みファイルリストを整理（最新1000件のみ保持）
+        if (metadata.ProcessedFiles.Count > 1000)
+        {
+            metadata.ProcessedFiles = metadata.ProcessedFiles.Skip(metadata.ProcessedFiles.Count - 1000).ToList();
+        }
+        
         var updatedMetadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(metadataPath, updatedMetadataJson);
         
         Console.WriteLine($"\nデータベース更新が完了しました。");
         Console.WriteLine($"更新ファイル数: {convertedCount}");
+        
+        // データ種別ごとの最終タイムスタンプを表示
+        Console.WriteLine("\n各データ種別の最終更新状況:");
+        foreach (var kvp in metadata.DataSpecStatuses)
+        {
+            Console.WriteLine($"  {kvp.Key}: {kvp.Value.LastFileTimestamp} ({kvp.Value.LastFileName})");
+        }
         
         return 0;
     }
@@ -795,6 +865,46 @@ static int EstimateDataSize(string startDate, string endDate, IEnumerable<string
     return (int)Math.Ceiling(totalSize);
 }
 
+// JVダウンロードファイルからlastfiletimestampを抽出
+static async Task<(string dataspec, string lastfiletimestamp)?> ExtractJVFileInfoAsync(string filePath)
+{
+    try
+    {
+        using var reader = new StreamReader(filePath);
+        var firstLine = await reader.ReadLineAsync();
+        if (firstLine != null && firstLine.StartsWith("JV DATASPEC:"))
+        {
+            // 例: "JV DATASPEC:RACE FROMDATE:20231201 LASTFILETIMESTAMP:20231231000000"
+            var parts = firstLine.Split(' ');
+            string? dataspec = null;
+            string? lastfiletimestamp = null;
+            
+            foreach (var part in parts)
+            {
+                if (part.StartsWith("DATASPEC:"))
+                {
+                    dataspec = part.Substring(9);
+                }
+                else if (part.StartsWith("LASTFILETIMESTAMP:"))
+                {
+                    lastfiletimestamp = part.Substring(18);
+                }
+            }
+            
+            if (dataspec != null && lastfiletimestamp != null)
+            {
+                return (dataspec, lastfiletimestamp);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"ファイル情報の抽出エラー ({filePath}): {ex.Message}");
+    }
+    
+    return null;
+}
+
 namespace JVDatabase
 {
     // 設定ファイルクラス
@@ -887,5 +997,17 @@ namespace JVDatabase
         public List<string> DataSpecs { get; set; } = new();
         public string DatabasePath { get; set; } = "";
         public string Version { get; set; } = "";
+        
+        // 差分更新用の追加フィールド
+        public Dictionary<string, DataSpecStatus> DataSpecStatuses { get; set; } = new();
+        public List<string> ProcessedFiles { get; set; } = new();
+    }
+    
+    // データ種別ごとの更新状態
+    public class DataSpecStatus
+    {
+        public string LastFileTimestamp { get; set; } = "";
+        public string LastFileName { get; set; } = "";
+        public DateTime LastUpdatedAt { get; set; }
     }
 }
