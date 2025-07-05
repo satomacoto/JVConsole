@@ -29,6 +29,9 @@ namespace JVParquet.TypeMapping
             // BNレコード（馬主マスタ）
             RegisterMapping(new BNRecordTypeMapping());
             
+            // BRレコード（生産者マスタ）
+            RegisterMapping(new BRRecordTypeMapping());
+            
             // 今後、各レコード種別のマッピングクラスを追加していく
         }
 
