@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using JVParquet.TypeMapping.RecordTypes;
 
 namespace JVParquet.TypeMapping
 {
@@ -22,8 +23,10 @@ namespace JVParquet.TypeMapping
         /// </summary>
         private void InitializeMappings()
         {
+            // AVレコード（出走取消・競走除外）
+            RegisterMapping(new AVRecordTypeMapping());
+            
             // 今後、各レコード種別のマッピングクラスを追加していく
-            // 例: RegisterMapping(new AVRecordTypeMapping());
         }
 
         /// <summary>
