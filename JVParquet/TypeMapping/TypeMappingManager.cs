@@ -32,6 +32,9 @@ namespace JVParquet.TypeMapping
             // BRレコード（生産者マスタ）
             RegisterMapping(new BRRecordTypeMapping());
             
+            // BTレコード（系統情報）
+            RegisterMapping(new BTRecordTypeMapping());
+            
             // 今後、各レコード種別のマッピングクラスを追加していく
         }
 
