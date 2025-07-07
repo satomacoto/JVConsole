@@ -35,8 +35,8 @@ namespace JVParquet.TypeMapping.RecordTypes
             // 本年・累計成績情報（配列展開される）
             // HonRuikei[0] - 本年成績
             { "HonRuikei_0__SetYear", typeof(int) },              // 設定年
-            { "HonRuikei_0__HonSyokinTotal", typeof(decimal) },   // 本賞金合計
-            { "HonRuikei_0__FukaSyokin", typeof(decimal) },       // 付加賞金合計
+            { "HonRuikei_0__HonSyokinTotal", typeof(int) },   // 本賞金合計
+            { "HonRuikei_0__FukaSyokin", typeof(int) },       // 付加賞金合計
             { "HonRuikei_0__ChakuKaisu_0", typeof(int) },         // 着回数[0] - 1着
             { "HonRuikei_0__ChakuKaisu_1", typeof(int) },         // 着回数[1] - 2着
             { "HonRuikei_0__ChakuKaisu_2", typeof(int) },         // 着回数[2] - 3着
@@ -46,8 +46,8 @@ namespace JVParquet.TypeMapping.RecordTypes
 
             // HonRuikei[1] - 累計成績
             { "HonRuikei_1__SetYear", typeof(int) },              // 設定年
-            { "HonRuikei_1__HonSyokinTotal", typeof(decimal) },   // 本賞金合計
-            { "HonRuikei_1__FukaSyokin", typeof(decimal) },       // 付加賞金合計
+            { "HonRuikei_1__HonSyokinTotal", typeof(int) },   // 本賞金合計
+            { "HonRuikei_1__FukaSyokin", typeof(int) },       // 付加賞金合計
             { "HonRuikei_1__ChakuKaisu_0", typeof(int) },         // 着回数[0] - 1着
             { "HonRuikei_1__ChakuKaisu_1", typeof(int) },         // 着回数[1] - 2着
             { "HonRuikei_1__ChakuKaisu_2", typeof(int) },         // 着回数[2] - 3着

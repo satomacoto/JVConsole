@@ -3,6 +3,7 @@ using Parquet.Data;
 using Parquet.Schema;
 using Parquet.File;
 using System.Text.Json;
+using JVParquet.TypeMapping;
 
 namespace JVParquet
 {
@@ -53,14 +54,33 @@ namespace JVParquet
 
             // データカラムの作成
             var dataColumns = new List<DataColumn>();
+            var typeManager = TypeMappingManager.Instance;
+            
             foreach (var field in context.Schema.Fields)
             {
                 var dataField = (DataField)field;
                 var values = columnData[field.Name];
+                var fieldType = typeManager.GetFieldType(recordSpec, field.Name);
                 
-                // 文字列型として処理（Phase 1）
-                var stringValues = values.Select(v => v?.ToString()).ToArray();
-                var column = new DataColumn(dataField, stringValues);
+                DataColumn column;
+                
+                if (fieldType == typeof(int))
+                {
+                    var intValues = values.Select(v => ConvertToInt(v) ?? 0).ToArray();
+                    column = new DataColumn(dataField, intValues);
+                }
+                else if (fieldType == typeof(decimal))
+                {
+                    var decimalValues = values.Select(v => ConvertToDecimal(v) ?? 0m).ToArray();
+                    column = new DataColumn(dataField, decimalValues);
+                }
+                else
+                {
+                    // デフォルトは文字列型
+                    var stringValues = values.Select(v => v?.ToString()).ToArray();
+                    column = new DataColumn(dataField, stringValues);
+                }
+                
                 dataColumns.Add(column);
             }
 
@@ -83,10 +103,13 @@ namespace JVParquet
             {
                 // スキーマの作成
                 var fields = new List<Field>();
+                var typeManager = TypeMappingManager.Instance;
+                
                 foreach (var kvp in sampleRecord.OrderBy(k => k.Key))
                 {
-                    // Phase 1: すべてstring型として定義
-                    fields.Add(new DataField(kvp.Key, typeof(string)));
+                    // TypeMappingManagerから型を取得
+                    var fieldType = typeManager.GetFieldType(recordSpec, kvp.Key);
+                    fields.Add(new DataField(kvp.Key, fieldType));
                 }
 
                 var schema = new ParquetSchema(fields);
@@ -176,6 +199,38 @@ namespace JVParquet
             var fileName = $"{_filePrefix}.parquet";
 
             return Path.Combine(partitionPath, fileName);
+        }
+
+        private static int? ConvertToInt(object? value)
+        {
+            if (value == null) return null;
+            
+            var str = value.ToString();
+            if (string.IsNullOrWhiteSpace(str)) return null;
+            
+            // JVデータの数値は右詰めのスペース埋めされている可能性がある
+            str = str.Trim();
+            
+            if (int.TryParse(str, out var result))
+                return result;
+                
+            return null;
+        }
+        
+        private static decimal? ConvertToDecimal(object? value)
+        {
+            if (value == null) return null;
+            
+            var str = value.ToString();
+            if (string.IsNullOrWhiteSpace(str)) return null;
+            
+            // JVデータの数値は右詰めのスペース埋めされている可能性がある
+            str = str.Trim();
+            
+            if (decimal.TryParse(str, out var result))
+                return result;
+                
+            return null;
         }
 
         public void Dispose()

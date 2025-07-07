@@ -15,36 +15,88 @@ namespace JVParquet.TypeMapping
         /// <summary>
         /// 共通の型推論ヘルパーメソッド
         /// </summary>
-        protected static Type InferTypeFromFieldName(string fieldName)
+        public static Type InferTypeFromFieldName(string fieldName)
         {
-            // 数値系のサフィックス
-            if (fieldName.EndsWith("Tosu") || fieldName.EndsWith("Num") || 
-                fieldName.EndsWith("Count") || fieldName.EndsWith("Kaiji") || 
-                fieldName.EndsWith("Nichiji"))
+            // 配列要素の場合の処理を改善
+            // 例: HonRuikei_0__ChakuKaisuDirt_ChakuKaisu_0 -> ChakuKaisu部分を抽出
+            var cleanFieldName = fieldName;
+            
+            // ダブルアンダースコアで区切られた最後の部分を取得
+            var parts = fieldName.Split(new[] { "__" }, StringSplitOptions.None);
+            if (parts.Length > 1)
+            {
+                cleanFieldName = parts[parts.Length - 1];
+            }
+            
+            // アンダースコアで区切られた最後の部分（インデックスを除く）
+            var lastParts = cleanFieldName.Split('_');
+            var lastPart = lastParts[lastParts.Length - 1];
+            
+            // 最後の部分が数字の場合、その前の部分を使用
+            if (System.Text.RegularExpressions.Regex.IsMatch(lastPart, @"^\d+$") && lastParts.Length > 1)
+            {
+                lastPart = lastParts[lastParts.Length - 2];
+            }
+            
+            // ChakuKaisuは常にint型（数値を文字列で保持）
+            // JVデータでは文字列として保存されるが、意味的には数値
+            if (lastPart == "ChakuKaisu" || cleanFieldName.Contains("ChakuKaisu"))
+                return typeof(int);
+            
+            // 頭数・回数系
+            if (lastPart == "Tosu" || lastPart == "Num" || 
+                lastPart == "Count" || lastPart == "Kaiji" || 
+                lastPart == "Nichiji" || lastPart == "RaceNum" ||
+                cleanFieldName.EndsWith("Tosu"))
+                return typeof(int);
+            
+            // 年月日時分秒
+            if (lastPart == "Year" || lastPart == "Month" || 
+                lastPart == "Day" || lastPart == "Hour" ||
+                lastPart == "Minute" || lastPart == "Second")
+                return typeof(int);
+            
+            // 着順
+            if (lastPart == "KakuteiJyuni" || lastPart == "Jyuni" || 
+                lastPart == "DochakuDosa" || lastPart == "DochakuTime")
                 return typeof(int);
 
             // 金額系
-            if (fieldName.Contains("Pay") || fieldName.Contains("Honsyokin") || 
-                fieldName.Contains("Fukasyokin") || fieldName.Contains("Syokin"))
-                return typeof(decimal);
+            if (cleanFieldName.Contains("Pay") || cleanFieldName.Contains("Honsyokin") || 
+                cleanFieldName.Contains("Fukasyokin") || cleanFieldName.Contains("Syokin") ||
+                cleanFieldName.Contains("Kakukin") || cleanFieldName.Contains("Kingaku") ||
+                cleanFieldName.Contains("Honsyo") || cleanFieldName.Contains("Fukasyo") ||
+                cleanFieldName.Contains("Odds"))
+                return typeof(int);
 
             // 距離・時間系
-            if (fieldName.EndsWith("Kyori") || fieldName.EndsWith("Time") || 
-                fieldName.EndsWith("Jikan"))
+            if (lastPart == "Kyori" || lastPart == "Time" || 
+                lastPart == "Jikan" || lastPart == "MileTime" ||
+                lastPart == "FurlongTime" || lastPart == "HaronTime")
                 return typeof(int);
-
-            // 年月日
-            if (fieldName.EndsWith(".Year") || fieldName.EndsWith(".Month") || 
-                fieldName.EndsWith(".Day"))
+            
+            // 重量系
+            if (lastPart == "Futan" || lastPart == "Taiju" || 
+                lastPart == "Zogen" || lastPart == "BaTaiju")
                 return typeof(int);
-
+            
+            // 順位・着差系
+            if (lastPart == "Rank" || lastPart == "Sa")
+                return typeof(int);
+            
             // フラグ系
-            if (fieldName.Contains("Flag") || fieldName.Contains("Kubun"))
-                return typeof(string); // 将来的にはbool or enumにする可能性あり
+            if (cleanFieldName.Contains("Flag") || cleanFieldName.Contains("Kubun") ||
+                cleanFieldName.Contains("Mark"))
+                return typeof(string);
 
             // コード系
-            if (fieldName.EndsWith("CD") || fieldName.EndsWith("Code"))
+            if (lastPart == "CD" || lastPart == "Code" || 
+                lastPart.EndsWith("CD") || lastPart.EndsWith("Code"))
                 return typeof(string);
+            
+            // 設定年
+            if (lastPart == "SetYear")
+                return typeof(int);
 
             // デフォルトは文字列
             return typeof(string);

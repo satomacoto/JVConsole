@@ -139,6 +139,12 @@ namespace JVParquet
             catch (Exception ex)
             {
                 Console.WriteLine($"Error processing record spec {recordSpec}: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+                    Console.WriteLine($"Inner stack trace: {ex.InnerException.StackTrace}");
+                }
                 return null;
             }
         }
