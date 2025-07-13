@@ -17,5 +17,13 @@
     <ProjectReference Include="..\JVParquet\JVParquet.csproj" />
   </ItemGroup>
 
+  <Target Name="CopyDependencies" AfterTargets="Build">
+    <ItemGroup>
+      <JVDownloaderFiles Include="$(SolutionDir)JVDownloader\bin\$(Configuration)\JVDownloader.exe" />
+      <JVParquetFiles Include="$(SolutionDir)JVParquet\bin\$(Configuration)\net9.0\JVParquet.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(JVDownloaderFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" Condition="Exists('$(SolutionDir)JVDownloader\bin\$(Configuration)\JVDownloader.exe')" />
+    <Copy SourceFiles="@(JVParquetFiles)" DestinationFolder="$(OutputPath)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

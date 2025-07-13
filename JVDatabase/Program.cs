@@ -556,68 +556,13 @@ static async Task<int> RunJVDownloaderAsync(string arguments, string? outputDir)
 {
     try
     {
-        // JVDownloaderの検索順序:
-        // 1. 同じディレクトリ（リリース時）
-        // 2. PATH環境変数
-        // 3. 相対パス（開発時）
-        
-        // まず同じディレクトリから探す
-        var jvDownloaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVDownloader.exe");
-        
-        // 見つからない場合はPATH環境変数から探す
-        if (!File.Exists(jvDownloaderPath))
-        {
-            var pathResult = await Task.Run(() =>
-            {
-                try
-                {
-                    using var process = Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "where",
-                        Arguments = "JVDownloader.exe",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    });
-                    
-                    if (process != null)
-                    {
-                        var output = process.StandardOutput.ReadToEnd();
-                        process.WaitForExit();
-                        if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-                        {
-                            return output.Split('\n', '\r')[0].Trim();
-                        }
-                    }
-                }
-                catch { }
-                return null;
-            });
-            
-            if (!string.IsNullOrEmpty(pathResult) && File.Exists(pathResult))
-            {
-                jvDownloaderPath = pathResult;
-            }
-        }
-        
-        // 見つからない場合は相対パスで探す（開発時用）
-        if (!File.Exists(jvDownloaderPath))
-        {
-            jvDownloaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "JVDownloader", "bin", "Debug", "JVDownloader.exe");
-        }
-        
-        if (!File.Exists(jvDownloaderPath))
-        {
-            jvDownloaderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "JVDownloader", "bin", "Release", "JVDownloader.exe");
-        }
+        var jvDownloaderPath = GetJVDownloaderPath();
         
         if (!File.Exists(jvDownloaderPath))
         {
             Console.Error.WriteLine($"JVDownloader.exe が見つかりません");
-            Console.Error.WriteLine($"以下の場所を確認してください:");
-            Console.Error.WriteLine($"  - {Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVDownloader.exe")}");
-            Console.Error.WriteLine($"  - PATH環境変数");
-            Console.Error.WriteLine($"  - 開発環境の相対パス");
+            Console.Error.WriteLine($"ビルドを実行してファイルが正しくコピーされているか確認してください");
+            Console.Error.WriteLine($"期待される場所: {jvDownloaderPath}");
             return -1;
         }
         
@@ -704,26 +649,13 @@ static async Task<int> RunJVParquetAsync(string inputFile, string outputDir, str
 {
     try
     {
-        // まず同じディレクトリから探す
-        var jvParquetPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVParquet.dll");
-        
-        // 見つからない場合は相対パスで探す（開発時用）
-        if (!File.Exists(jvParquetPath))
-        {
-            jvParquetPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "JVParquet", "bin", "Debug", "net9.0", "JVParquet.dll");
-        }
-        
-        if (!File.Exists(jvParquetPath))
-        {
-            jvParquetPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "JVParquet", "bin", "Release", "net9.0", "JVParquet.dll");
-        }
+        var jvParquetPath = GetJVParquetPath();
         
         if (!File.Exists(jvParquetPath))
         {
             Console.Error.WriteLine($"JVParquet.dll が見つかりません");
-            Console.Error.WriteLine($"以下の場所を確認してください:");
-            Console.Error.WriteLine($"  - {Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVParquet.dll")}");
-            Console.Error.WriteLine($"  - 開発環境の相対パス");
+            Console.Error.WriteLine($"ビルドを実行してファイルが正しくコピーされているか確認してください");
+            Console.Error.WriteLine($"期待される場所: {jvParquetPath}");
             return -1;
         }
         
@@ -795,6 +727,19 @@ static async Task<int> RunJVParquetAsync(string inputFile, string outputDir, str
         Console.Error.WriteLine($"JVParquet実行エラー: {ex.Message}");
         return -1;
     }
+}
+
+// 実行ファイルのパスを取得するヘルパーメソッド
+static string GetJVDownloaderPath()
+{
+    // ビルド済みを前提として、同じディレクトリから探す
+    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVDownloader.exe");
+}
+
+static string GetJVParquetPath()
+{
+    // ビルド済みを前提として、同じディレクトリから探す
+    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVParquet.dll");
 }
 
 // 設定ファイル関連のヘルパーメソッド
@@ -950,18 +895,26 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
                 {
                     if (line.StartsWith("RA") && line.Length > 30)
                     {
-                        // RA7YYYYMMDD... の形式から日付を抽出
-                        var recordDate = line.Substring(3, 8);
-                        if (recordDate == opts.TargetDate)
+                        // レコード種別IDを確認（RA）
+                        var recordSpec = line.Substring(0, 2);
+                        if (recordSpec == "RA")
                         {
-                            // 場コードとレース番号を抽出
-                            var jyoCD = line.Substring(20, 2);
-                            var raceNum = int.Parse(line.Substring(26, 2));
-                            
-                            var race = (jyoCD, raceNum);
-                            if (!races.Contains(race))
+                            // 開催年月日: 11-18 (8桁)
+                            var recordDate = line.Substring(11, 8);
+                            if (recordDate == opts.TargetDate)
                             {
-                                races.Add(race);
+                                // 場コード: 19-20 (2桁)
+                                var jyoCD = line.Substring(19, 2);
+                                // レース番号: 23-24 (2桁)
+                                var raceNumStr = line.Substring(23, 2).Trim();
+                                if (!string.IsNullOrEmpty(raceNumStr) && int.TryParse(raceNumStr, out int raceNum))
+                                {
+                                    var race = (jyoCD, raceNum);
+                                    if (!races.Contains(race))
+                                    {
+                                        races.Add(race);
+                                    }
+                                }
                             }
                         }
                     }
@@ -972,6 +925,13 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
         {
             Console.WriteLine($"\n{opts.TargetDate}のRAデータが見つかりません。");
             Console.WriteLine($"確認したパス: {dayDir}");
+            return 1;
+        }
+        
+        if (races.Count == 0)
+        {
+            Console.WriteLine($"\n{opts.TargetDate}のレースが見つかりません。");
+            Console.WriteLine("RAデータが存在するか、指定した日付が正しいか確認してください。");
             return 1;
         }
         
@@ -1317,7 +1277,7 @@ namespace JVDatabase
         [Option('d', "date", Required = true, HelpText = "対象日 (YYYYMMDD形式)")]
         public string TargetDate { get; set; } = "";
         
-        [Option('s', "spec", Required = false, Default = "0B41", HelpText = "データ種別（0B41:単複枠時系列）")]
+        [Option('s', "spec", Required = false, Default = "0B41", HelpText = "データ種別（0B11:票数時系列、0B12:払戻金時系列、0B15:レース結果、0B30:馬体重、0B31:単複枠最終オッズ、0B32:馬連最終オッズ、0B33:ワイド最終オッズ、0B34:馬単最終オッズ、0B35:三連複最終オッズ、0B36:三連単最終オッズ、0B41:単複枠時系列オッズ、0B42:馬連時系列オッズ）")]
         public string DataSpec { get; set; } = "0B41";
     }
     
