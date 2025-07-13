@@ -1,47 +1,9 @@
 ﻿using System.Text;
 using CommandLine;
 using JVParquet;
-using JVParquet.Tests;
 
 // Shift-JISエンコーディングを登録
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-// テストモード実行
-if (args.Length > 0 && args[0] == "test")
-{
-    Console.WriteLine("Running JVParquet Conversion Test...");
-    var test = new ParquetConversionTest();
-    
-    try
-    {
-        var testResult = await test.RunFullConversionTestAsync();
-        test.GenerateReport(testResult);
-        return testResult.ConversionSucceeded ? 0 : 1;
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"Test failed: {ex.Message}");
-        return 1;
-    }
-    finally
-    {
-        test.Cleanup();
-    }
-}
-// SEレコードのテスト実行
-else if (args.Length > 0 && args[0] == "test-se")
-{
-    Console.WriteLine("Running SE Record Type Conversion Test...");
-    TestSERecords.RunTest();
-    return 0;
-}
-// SEレコードのParquet変換テスト実行
-else if (args.Length > 0 && args[0] == "test-se-parquet")
-{
-    Console.WriteLine("Running SE Record Parquet Conversion Test...");
-    await SimpleSETest.RunTest();
-    return 0;
-}
 
 // コマンドライン引数の解析と実行
 var result = Parser.Default.ParseArguments<Options, ReadOptions>(args);

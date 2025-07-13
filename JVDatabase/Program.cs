@@ -11,12 +11,14 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 Console.OutputEncoding = Encoding.UTF8;
 
 // コマンドライン引数の解析と実行
-return await Parser.Default.ParseArguments<ConfigOptions, InitOptions, UpdateOptions, RealtimeOptions>(args)
+return await Parser.Default.ParseArguments<ConfigOptions, InitOptions, UpdateOptions, RealtimeOptions, AnalyzeOptions, FetchOddsOptions>(args)
     .MapResult(
         async (ConfigOptions opts) => await RunConfigAsync(opts),
         async (InitOptions opts) => await RunInitAsync(opts),
         async (UpdateOptions opts) => await RunUpdateAsync(opts),
         async (RealtimeOptions opts) => await RunRealtimeAsync(opts),
+        async (AnalyzeOptions opts) => await RunAnalyzeAsync(opts),
+        async (FetchOddsOptions opts) => await RunFetchOddsAsync(opts),
         async errs => await Task.FromResult(1));
 
 // config コマンドの実装
@@ -905,6 +907,300 @@ static async Task<(string dataspec, string lastfiletimestamp)?> ExtractJVFileInf
     return null;
 }
 
+// fetch-odds コマンドの実装
+static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
+{
+    try
+    {
+        Console.WriteLine($"指定日のオッズデータを取得します: {opts.TargetDate}");
+        
+        // 1. RAデータから指定日のレース情報を取得
+        var parquetDir = Path.Combine(opts.DatabasePath, "parquet", "RA");
+        if (!Directory.Exists(parquetDir))
+        {
+            Console.Error.WriteLine("RAデータが見つかりません。先に 'init' または 'update' を実行してください。");
+            return 1;
+        }
+        
+        // Parquetファイルから指定日のレースを検索
+        var targetDate = DateTime.ParseExact(opts.TargetDate, "yyyyMMdd", null);
+        var races = new List<(string JyoCD, int RaceNum)>();
+        
+        // 年月日でパーティション分けされているので、該当ディレクトリを探す
+        var yearDir = Path.Combine(parquetDir, $"year={targetDate.Year}");
+        var monthDir = Path.Combine(yearDir, $"month={targetDate.Month}");
+        var dayDir = Path.Combine(monthDir, $"day={targetDate.Day}");
+        
+        if (Directory.Exists(dayDir))
+        {
+            // 該当日のParquetファイルを読み込み
+            var parquetFiles = Directory.GetFiles(dayDir, "*.parquet");
+            Console.WriteLine($"\n{parquetFiles.Length}個のRAファイルが見つかりました。");
+            
+            // 簡易的にRAレコードから場コードを抽出
+            // 実際にはParquetを読むべきだが、ここではrawファイルから抽出
+            var rawDir = Path.Combine(opts.DatabasePath, "raw");
+            var rawFiles = Directory.GetFiles(rawDir, "JV-*.txt");
+            
+            foreach (var rawFile in rawFiles)
+            {
+                using var reader = new StreamReader(rawFile, Encoding.GetEncoding(932));
+                string? line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line.StartsWith("RA") && line.Length > 30)
+                    {
+                        // RA7YYYYMMDD... の形式から日付を抽出
+                        var recordDate = line.Substring(3, 8);
+                        if (recordDate == opts.TargetDate)
+                        {
+                            // 場コードとレース番号を抽出
+                            var jyoCD = line.Substring(20, 2);
+                            var raceNum = int.Parse(line.Substring(26, 2));
+                            
+                            var race = (jyoCD, raceNum);
+                            if (!races.Contains(race))
+                            {
+                                races.Add(race);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"\n{opts.TargetDate}のRAデータが見つかりません。");
+            Console.WriteLine($"確認したパス: {dayDir}");
+            return 1;
+        }
+        
+        // 場コードごとにグループ化
+        var jyoGroups = races.GroupBy(r => r.JyoCD).OrderBy(g => g.Key);
+        
+        Console.WriteLine($"\n開催場数: {jyoGroups.Count()}");
+        foreach (var group in jyoGroups)
+        {
+            var jyoName = GetJyoName(group.Key);
+            Console.WriteLine($"  {group.Key}: {jyoName} ({group.Count()}レース)");
+        }
+        
+        // 2. 各場のレースデータを取得
+        var outputDir = Path.Combine(opts.DatabasePath, "realtime", "raw");
+        Directory.CreateDirectory(outputDir);
+        
+        foreach (var jyoGroup in jyoGroups)
+        {
+            var jyoCD = jyoGroup.Key;
+            var raceNums = jyoGroup.Select(r => r.RaceNum).OrderBy(n => n).ToList();
+            
+            Console.WriteLine($"\n[{GetJyoName(jyoCD)}] {opts.DataSpec}データを取得中...");
+            
+            // レースキーを生成
+            var keys = raceNums.Select(num => $"{opts.TargetDate}{jyoCD}{num:00}").ToList();
+            
+            var downloadArgs = new[]
+            {
+                "jvrt",
+                "--dataspec", opts.DataSpec,
+                "--key", string.Join(",", keys),
+                "--outputDir", outputDir
+            };
+            
+            var downloadResult = await RunJVDownloaderAsync(string.Join(" ", downloadArgs), outputDir);
+            if (downloadResult == 0)
+            {
+                Console.WriteLine($"  → {keys.Count}レース分のデータを取得しました");
+            }
+            else
+            {
+                Console.WriteLine($"  → ダウンロードに失敗しました（エラーコード: {downloadResult}）");
+            }
+        }
+        
+        // 3. Parquet変換
+        var rtFiles = Directory.GetFiles(outputDir, $"JVRT-{opts.DataSpec}-*.txt");
+        if (rtFiles.Length > 0)
+        {
+            Console.WriteLine($"\n{rtFiles.Length}個のファイルをParquet形式に変換中...");
+            
+            var parquetOutputDir = Path.Combine(opts.DatabasePath, "realtime", "parquet");
+            int convertedCount = 0;
+            
+            foreach (var file in rtFiles)
+            {
+                var result = await RunJVParquetAsync(file, parquetOutputDir, Array.Empty<string>());
+                if (result == 0)
+                {
+                    convertedCount++;
+                }
+            }
+            
+            Console.WriteLine($"変換完了: {convertedCount}/{rtFiles.Length}");
+        }
+        
+        Console.WriteLine($"\n{opts.TargetDate}のオッズデータ取得が完了しました。");
+        return 0;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"エラーが発生しました: {ex.Message}");
+        return 1;
+    }
+}
+
+// 場コードから場名を取得
+static string GetJyoName(string jyoCD)
+{
+    return jyoCD switch
+    {
+        "01" => "札幌",
+        "02" => "函館",
+        "03" => "福島",
+        "04" => "新潟",
+        "05" => "東京",
+        "06" => "中山",
+        "07" => "中京",
+        "08" => "京都",
+        "09" => "阪神",
+        "10" => "小倉",
+        _ => "不明"
+    };
+}
+
+// analyze コマンドの実装
+static async Task<int> RunAnalyzeAsync(AnalyzeOptions opts)
+{
+    try
+    {
+        // メタデータの確認
+        var metadataPath = Path.Combine(opts.DatabasePath, ".jvdb", "metadata.json");
+        if (!File.Exists(metadataPath))
+        {
+            Console.Error.WriteLine("データベースが初期化されていません。先に 'init' コマンドを実行してください。");
+            return 1;
+        }
+        
+        // Pythonスクリプトのパスを探す
+        var analyzePyPath = Path.Combine(opts.DatabasePath, "analysis", "analyze.py");
+        
+        // 見つからない場合は同じディレクトリから探す
+        if (!File.Exists(analyzePyPath))
+        {
+            analyzePyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "jvdb", "analysis", "analyze.py");
+        }
+        
+        // 見つからない場合は相対パスで探す（開発時用）
+        if (!File.Exists(analyzePyPath))
+        {
+            analyzePyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "jvdb", "analysis", "analyze.py");
+        }
+        
+        if (!File.Exists(analyzePyPath))
+        {
+            Console.Error.WriteLine($"分析スクリプトが見つかりません: {analyzePyPath}");
+            Console.Error.WriteLine("Python分析パッケージが正しくインストールされているか確認してください。");
+            return 1;
+        }
+        
+        // Pythonコマンドの構築
+        var arguments = new List<string> { $"\"{analyzePyPath}\"" };
+        
+        // パラメータに基づいてコマンドを構築
+        if (opts.Command == "realtime-odds")
+        {
+            arguments.Add("realtime");
+            arguments.Add("update-odds");
+            arguments.Add("-d");
+            arguments.Add($"\"{Path.Combine(opts.DatabasePath, "parquet")}\"");
+            
+            if (!string.IsNullOrEmpty(opts.Spec))
+            {
+                arguments.Add("-s");
+                arguments.Add(opts.Spec);
+            }
+            
+            if (opts.MinutesBefore > 0)
+            {
+                arguments.Add("-m");
+                arguments.Add(opts.MinutesBefore.ToString());
+            }
+        }
+        else if (opts.Command == "race-stats")
+        {
+            arguments.Add("stats");
+            arguments.Add("race-summary");
+            arguments.Add("-s");
+            arguments.Add(opts.StartDate ?? DateTime.Now.AddMonths(-1).ToString("yyyyMMdd"));
+            arguments.Add("-e");
+            arguments.Add(opts.EndDate ?? DateTime.Now.ToString("yyyyMMdd"));
+            
+            if (!string.IsNullOrEmpty(opts.Output))
+            {
+                arguments.Add("-o");
+                arguments.Add($"\"{opts.Output}\"");
+            }
+        }
+        else
+        {
+            Console.Error.WriteLine($"未知の分析コマンド: {opts.Command}");
+            Console.Error.WriteLine("利用可能なコマンド: realtime-odds, race-stats");
+            return 1;
+        }
+        
+        // Pythonの実行
+        var psi = new ProcessStartInfo
+        {
+            FileName = "python",
+            Arguments = string.Join(" ", arguments),
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(analyzePyPath)
+        };
+        
+        Console.WriteLine($"実行コマンド: python {string.Join(" ", arguments)}");
+        
+        using var process = Process.Start(psi);
+        if (process == null)
+        {
+            Console.Error.WriteLine("Pythonの起動に失敗しました。");
+            Console.Error.WriteLine("Pythonがインストールされているか確認してください。");
+            return -1;
+        }
+        
+        // 出力を表示
+        var outputTask = Task.Run(async () =>
+        {
+            string? line;
+            while ((line = await process.StandardOutput.ReadLineAsync()) != null)
+            {
+                Console.WriteLine(line);
+            }
+        });
+        
+        var errorTask = Task.Run(async () =>
+        {
+            string? line;
+            while ((line = await process.StandardError.ReadLineAsync()) != null)
+            {
+                Console.Error.WriteLine(line);
+            }
+        });
+        
+        await process.WaitForExitAsync();
+        await Task.WhenAll(outputTask, errorTask);
+        
+        return process.ExitCode;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"エラーが発生しました: {ex.Message}");
+        return 1;
+    }
+}
+
 namespace JVDatabase
 {
     // 設定ファイルクラス
@@ -985,6 +1281,44 @@ namespace JVDatabase
         [Option('d', "dataspec", Required = false, Default = new[] { "0B15", "0B30", "0B11" }, 
             Separator = ',', HelpText = "取得するデータ種別")]
         public IEnumerable<string> DataSpecs { get; set; } = new[] { "0B15", "0B30", "0B11" };
+    }
+    
+    [Verb("analyze", HelpText = "データベースを分析")]
+    public class AnalyzeOptions
+    {
+        [Option('p', "path", Required = false, Default = "./jvdb", HelpText = "データベースのパス")]
+        public string DatabasePath { get; set; } = "./jvdb";
+        
+        [Option('c', "command", Required = true, HelpText = "分析コマンド (realtime-odds, race-stats)")]
+        public string Command { get; set; } = "";
+        
+        [Option('s', "start", Required = false, HelpText = "開始日 (YYYYMMDD形式)")]
+        public string? StartDate { get; set; }
+        
+        [Option('e', "end", Required = false, HelpText = "終了日 (YYYYMMDD形式)")]
+        public string? EndDate { get; set; }
+        
+        [Option("spec", Required = false, HelpText = "レコード種別 (O1, O2等)")]
+        public string? Spec { get; set; }
+        
+        [Option('m', "minutes", Required = false, Default = 10, HelpText = "レース発走何分前のデータか")]
+        public int MinutesBefore { get; set; } = 10;
+        
+        [Option('o', "output", Required = false, HelpText = "出力ファイルパス")]
+        public string? Output { get; set; }
+    }
+    
+    [Verb("fetch-odds", HelpText = "指定日の時系列オッズデータを取得")]
+    public class FetchOddsOptions
+    {
+        [Option('p', "path", Required = false, Default = "./jvdb", HelpText = "データベースのパス")]
+        public string DatabasePath { get; set; } = "./jvdb";
+        
+        [Option('d', "date", Required = true, HelpText = "対象日 (YYYYMMDD形式)")]
+        public string TargetDate { get; set; } = "";
+        
+        [Option('s', "spec", Required = false, Default = "0B41", HelpText = "データ種別（0B41:単複枠時系列）")]
+        public string DataSpec { get; set; } = "0B41";
     }
     
     // データベースメタデータ
