@@ -16,7 +16,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVParquet", "JVParquet\JVPa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVDatabase", "JVDatabase\JVDatabase.csproj", "{5A03724B-7DCE-760B-E72D-B0A2627D61D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVParquet.Tests", "JVParquet.Tests\JVParquet.Tests.csproj", "{3B8CFD94-396A-4981-99B6-753B1EE12F19}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JVDuckDB", "JVDuckDB\JVDuckDB.csproj", "{3C6844AD-8D63-C084-B952-BB787BA48D02}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,10 +40,10 @@ Global
 		{5A03724B-7DCE-760B-E72D-B0A2627D61D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A03724B-7DCE-760B-E72D-B0A2627D61D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A03724B-7DCE-760B-E72D-B0A2627D61D7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3B8CFD94-396A-4981-99B6-753B1EE12F19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3B8CFD94-396A-4981-99B6-753B1EE12F19}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3B8CFD94-396A-4981-99B6-753B1EE12F19}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3B8CFD94-396A-4981-99B6-753B1EE12F19}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C6844AD-8D63-C084-B952-BB787BA48D02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C6844AD-8D63-C084-B952-BB787BA48D02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C6844AD-8D63-C084-B952-BB787BA48D02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C6844AD-8D63-C084-B952-BB787BA48D02}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

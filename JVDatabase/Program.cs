@@ -2,6 +2,7 @@ using CommandLine;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text;
+using System.Runtime.InteropServices;
 using JVDatabase;
 
 // Shift_JISを使用可能にする
@@ -220,13 +221,13 @@ static async Task<int> RunInitAsync(InitOptions opts)
             "--dataspec", string.Join(",", opts.DataSpecs),
             "--fromdate", $"{opts.StartDate}000000-{opts.EndDate}000000",
             "--option", useSetupOption ? "4" : "1", // 期間指定の場合はoption 3を使用
-            "--outputDir", Path.Combine(opts.DatabasePath, "raw")
+            "--outputDir", Path.Combine(opts.DatabasePath, "stored", "raw")
         };
         
         Console.WriteLine("※ JVDownloaderが自動的に期間を分割して処理します。");
         Console.WriteLine("※ ダウンロード中は進捗が表示されます。しばらくお待ちください...");
         
-        var downloadResult = await RunJVDownloaderAsync(string.Join(" ", downloadArgs), Path.Combine(opts.DatabasePath, "raw"));
+        var downloadResult = await RunJVDownloaderAsync(string.Join(" ", downloadArgs), Path.Combine(opts.DatabasePath, "stored", "raw"));
         if (downloadResult != 0)
         {
             Console.Error.WriteLine($"ダウンロードに失敗しました。");
@@ -234,7 +235,8 @@ static async Task<int> RunInitAsync(InitOptions opts)
         }
         
         // 4. ダウンロードしたファイルの一覧取得
-        var rawDir = Path.Combine(opts.DatabasePath, "raw");
+        var rawDir = Path.Combine(opts.DatabasePath, "stored", "raw");
+        Directory.CreateDirectory(rawDir);
         var downloadedFiles = Directory.GetFiles(rawDir, "JV-*.txt")
             .OrderBy(f => f)
             .ToList();
@@ -242,7 +244,7 @@ static async Task<int> RunInitAsync(InitOptions opts)
         Console.WriteLine($"\n[2/3] {downloadedFiles.Count}個のファイルをParquet形式に変換中...");
         
         // 5. Parquet変換
-        var parquetDir = Path.Combine(opts.DatabasePath, "parquet");
+        var parquetDir = Path.Combine(opts.DatabasePath, "stored", "parquet");
         Directory.CreateDirectory(parquetDir);
         
         int convertedCount = 0;
@@ -263,7 +265,7 @@ static async Task<int> RunInitAsync(InitOptions opts)
             Console.WriteLine($"\n変換中: {convertedCount + 1}/{downloadedFiles.Count} - {fileName}");
             
             var startTime = DateTime.Now;
-            var result = await RunJVParquetAsync(file, parquetDir, opts.SkipRecordSpecs.ToArray());
+            var result = await RunJVDuckDBAsync(file, parquetDir, opts.SkipRecordSpecs.ToArray());
             var elapsed = DateTime.Now - startTime;
             
             if (result == 0)
@@ -306,7 +308,7 @@ static async Task<int> RunInitAsync(InitOptions opts)
         
         Console.WriteLine($"\nJVDatabase初期化が完了しました。");
         Console.WriteLine($"データベースパス: {opts.DatabasePath}");
-        Console.WriteLine($"Parquetファイル: {parquetDir}");
+        Console.WriteLine($"蓄積データ: {Path.Combine(opts.DatabasePath, "stored")}");
         
         return 0;
     }
@@ -343,7 +345,8 @@ static async Task<int> RunUpdateAsync(UpdateOptions opts)
         
         // 更新期間の決定
         var toDate = opts.EndDate ?? DateTime.Now.ToString("yyyyMMdd");
-        var rawDir = Path.Combine(opts.DatabasePath, "raw");
+        var rawDir = Path.Combine(opts.DatabasePath, "stored", "raw");
+        Directory.CreateDirectory(rawDir);
         
         // データ種別ごとに差分更新を実行
         Console.WriteLine($"\n[1/3] 差分データをダウンロード中...");
@@ -397,7 +400,7 @@ static async Task<int> RunUpdateAsync(UpdateOptions opts)
         Console.WriteLine($"\n[2/3] {downloadedFiles.Count}個の新しいファイルをParquet形式に変換中...");
         
         // Parquet変換
-        var parquetDir = Path.Combine(opts.DatabasePath, "parquet");
+        var parquetDir = Path.Combine(opts.DatabasePath, "stored", "parquet");
         int convertedCount = 0;
         
         foreach (var file in downloadedFiles)
@@ -410,7 +413,7 @@ static async Task<int> RunUpdateAsync(UpdateOptions opts)
                 : Array.Empty<string>();
             
             var startTime = DateTime.Now;
-            var result = await RunJVParquetAsync(file, parquetDir, skipSpecs);
+            var result = await RunJVDuckDBAsync(file, parquetDir, skipSpecs);
             var elapsed = DateTime.Now - startTime;
             
             if (result == 0)
@@ -530,7 +533,7 @@ static async Task<int> RunRealtimeAsync(RealtimeOptions opts)
             foreach (var file in rtFiles)
             {
                 Console.Write($"\r変換中: {convertedCount + 1}/{rtFiles.Count}");
-                var result = await RunJVParquetAsync(file, parquetDir, Array.Empty<string>());
+                var result = await RunJVDuckDBAsync(file, parquetDir, Array.Empty<string>());
                 if (result == 0)
                 {
                     convertedCount++;
@@ -644,22 +647,22 @@ static async Task<int> RunJVDownloaderAsync(string arguments, string? outputDir)
     }
 }
 
-// JVParquetを実行するヘルパーメソッド
-static async Task<int> RunJVParquetAsync(string inputFile, string outputDir, string[] skipRecordSpecs)
+// JVDuckDBを実行するヘルパーメソッド  
+static async Task<int> RunJVDuckDBAsync(string inputFile, string outputDir, string[] skipRecordSpecs)
 {
     try
     {
-        var jvParquetPath = GetJVParquetPath();
+        var jvDuckDBPath = GetJVDuckDBPath();
         
-        if (!File.Exists(jvParquetPath))
+        if (!File.Exists(jvDuckDBPath))
         {
-            Console.Error.WriteLine($"JVParquet.dll が見つかりません");
+            Console.Error.WriteLine($"JVDuckDB.exe が見つかりません");
             Console.Error.WriteLine($"ビルドを実行してファイルが正しくコピーされているか確認してください");
-            Console.Error.WriteLine($"期待される場所: {jvParquetPath}");
+            Console.Error.WriteLine($"期待される場所: {jvDuckDBPath}");
             return -1;
         }
         
-        var arguments = $"\"{jvParquetPath}\" convert -i \"{inputFile}\" -o \"{outputDir}\"";
+        var arguments = $"-i \"{inputFile}\" -o \"{outputDir}\" -v";
         if (skipRecordSpecs.Length > 0)
         {
             arguments += $" -s {string.Join(",", skipRecordSpecs)}";
@@ -667,7 +670,7 @@ static async Task<int> RunJVParquetAsync(string inputFile, string outputDir, str
         
         var psi = new ProcessStartInfo
         {
-            FileName = "dotnet",
+            FileName = jvDuckDBPath,
             Arguments = arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
@@ -736,10 +739,11 @@ static string GetJVDownloaderPath()
     return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVDownloader.exe");
 }
 
-static string GetJVParquetPath()
+static string GetJVDuckDBPath()
 {
     // ビルド済みを前提として、同じディレクトリから探す
-    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "JVParquet.dll");
+    var executableName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "JVDuckDB.exe" : "JVDuckDB";
+    return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName);
 }
 
 // 設定ファイル関連のヘルパーメソッド
@@ -857,10 +861,123 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
 {
     try
     {
-        Console.WriteLine($"指定日のオッズデータを取得します: {opts.TargetDate}");
+        // 日付または日付範囲の検証
+        if (string.IsNullOrEmpty(opts.TargetDate) && 
+            (string.IsNullOrEmpty(opts.StartDate) || string.IsNullOrEmpty(opts.EndDate)))
+        {
+            Console.Error.WriteLine("日付を指定してください: -d YYYYMMDD または --start-date YYYYMMDD --end-date YYYYMMDD");
+            return 1;
+        }
+        
+        // 処理対象の日付リストを作成
+        var targetDates = new List<string>();
+        
+        if (!string.IsNullOrEmpty(opts.TargetDate))
+        {
+            // 単一日付指定の場合
+            targetDates.Add(opts.TargetDate);
+            Console.WriteLine($"指定日のオッズデータを取得します: {opts.TargetDate}");
+        }
+        else
+        {
+            // 日付範囲指定の場合
+            Console.WriteLine($"日付範囲のオッズデータを取得します: {opts.StartDate} - {opts.EndDate}");
+            
+            // RAデータから範囲内の開催日を取得
+            var parquetDir = Path.Combine(opts.DatabasePath, "stored", "parquet", "RA");
+            if (!Directory.Exists(parquetDir))
+            {
+                Console.Error.WriteLine("RAデータが見つかりません。先に 'init' または 'update' を実行してください。");
+                return 1;
+            }
+            
+            // DuckDBで開催日を検索
+            using var connection = new DuckDB.NET.Data.DuckDBConnection("DataSource=:memory:");
+            connection.Open();
+            
+            var searchQuery = $@"
+                SELECT DISTINCT 
+                    CASE 
+                        WHEN LENGTH(id_Year) = 2 THEN CONCAT('20', id_Year, id_MonthDay)
+                        WHEN LENGTH(id_Year) = 4 THEN CONCAT(id_Year, id_MonthDay)
+                        ELSE CONCAT('20', id_Year, id_MonthDay)
+                    END as race_date,
+                    COUNT(DISTINCT id_JyoCD || id_RaceNum) as race_count
+                FROM read_parquet('{parquetDir}/**/*.parquet')
+                WHERE CASE 
+                        WHEN LENGTH(id_Year) = 2 THEN CONCAT('20', id_Year, id_MonthDay)
+                        WHEN LENGTH(id_Year) = 4 THEN CONCAT(id_Year, id_MonthDay)
+                        ELSE CONCAT('20', id_Year, id_MonthDay)
+                    END >= '{opts.StartDate}'
+                  AND CASE 
+                        WHEN LENGTH(id_Year) = 2 THEN CONCAT('20', id_Year, id_MonthDay)
+                        WHEN LENGTH(id_Year) = 4 THEN CONCAT(id_Year, id_MonthDay)
+                        ELSE CONCAT('20', id_Year, id_MonthDay)
+                    END <= '{opts.EndDate}'
+                  AND TRY_CAST(id_JyoCD AS INTEGER) IS NOT NULL  -- 数値に変換可能なもののみ
+                  AND TRY_CAST(id_JyoCD AS INTEGER) BETWEEN 1 AND 10  -- 中央競馬のみ
+                GROUP BY id_Year, id_MonthDay
+                HAVING race_count >= 12  -- 最低1場開催（12レース）以上
+                ORDER BY race_date
+            ";
+            
+            using var command = new DuckDB.NET.Data.DuckDBCommand(searchQuery, connection);
+            using var reader = command.ExecuteReader();
+            
+            while (reader.Read())
+            {
+                var raceDate = reader.GetString(0);
+                var raceCount = reader.GetInt64(1);
+                targetDates.Add(raceDate);
+                Console.WriteLine($"  {raceDate}: {raceCount}レース");
+            }
+            
+            if (targetDates.Count == 0)
+            {
+                Console.WriteLine("指定期間内に開催日が見つかりませんでした。");
+                return 0;
+            }
+            
+            Console.WriteLine($"\n{targetDates.Count}日分のデータを取得します。");
+        }
+        
+        // 各日付について処理
+        int successCount = 0;
+        int failCount = 0;
+        
+        foreach (var targetDate in targetDates)
+        {
+            Console.WriteLine($"\n=== {targetDate} の処理開始 ===");
+            var result = await ProcessSingleDateOdds(opts, targetDate);
+            if (result == 0)
+            {
+                successCount++;
+            }
+            else
+            {
+                failCount++;
+            }
+        }
+        
+        Console.WriteLine($"\n処理完了: 成功 {successCount}日, 失敗 {failCount}日");
+        return failCount > 0 ? 1 : 0;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"エラーが発生しました: {ex.Message}");
+        return 1;
+    }
+}
+
+// 単一日付の処理を別メソッドに分離
+static async Task<int> ProcessSingleDateOdds(FetchOddsOptions opts, string targetDate)
+{
+    try
+    {
+        Console.WriteLine($"{targetDate}のオッズデータを取得します");
         
         // 1. RAデータから指定日のレース情報を取得
-        var parquetDir = Path.Combine(opts.DatabasePath, "parquet", "RA");
+        var parquetDir = Path.Combine(opts.DatabasePath, "stored", "parquet", "RA");
         if (!Directory.Exists(parquetDir))
         {
             Console.Error.WriteLine("RAデータが見つかりません。先に 'init' または 'update' を実行してください。");
@@ -868,75 +985,192 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
         }
         
         // Parquetファイルから指定日のレースを検索
-        var targetDate = DateTime.ParseExact(opts.TargetDate, "yyyyMMdd", null);
         var races = new List<(string JyoCD, int RaceNum)>();
         
-        // 年月日でパーティション分けされているので、該当ディレクトリを探す
-        var yearDir = Path.Combine(parquetDir, $"year={targetDate.Year}");
-        var monthDir = Path.Combine(yearDir, $"month={targetDate.Month}");
-        var dayDir = Path.Combine(monthDir, $"day={targetDate.Day}");
+        Console.WriteLine($"\nRAの全Parquetファイルから{targetDate}のデータを検索します...");
         
-        if (Directory.Exists(dayDir))
+        if (Directory.Exists(parquetDir))
         {
-            // 該当日のParquetファイルを読み込み
-            var parquetFiles = Directory.GetFiles(dayDir, "*.parquet");
-            Console.WriteLine($"\n{parquetFiles.Length}個のRAファイルが見つかりました。");
-            
-            // 簡易的にRAレコードから場コードを抽出
-            // 実際にはParquetを読むべきだが、ここではrawファイルから抽出
-            var rawDir = Path.Combine(opts.DatabasePath, "raw");
-            var rawFiles = Directory.GetFiles(rawDir, "JV-*.txt");
-            
-            foreach (var rawFile in rawFiles)
+            try
             {
-                using var reader = new StreamReader(rawFile, Encoding.GetEncoding(932));
-                string? line;
-                while ((line = reader.ReadLine()) != null)
+                // DuckDBを使用してParquetファイルから直接レース情報を読み取り
+                Console.WriteLine($"\nDuckDBを使用してParquetファイルを読み込みます...");
+                using var connection = new DuckDB.NET.Data.DuckDBConnection("DataSource=:memory:");
+                connection.Open();
+                Console.WriteLine($"DuckDB接続成功");
+                
+                // RAディレクトリ内の全てのParquetファイルを読み込む
+                var parquetPath = parquetDir.Replace("\\", "/");
+                var monthDayFilter = targetDate.Substring(4); // MMDD形式
+                
+                // まず、RAディレクトリ内の全てのid_MonthDayを確認
+                var checkAllQuery = $@"
+                    SELECT id_MonthDay, COUNT(*) as count
+                    FROM read_parquet('{parquetPath}/**/*.parquet')
+                    GROUP BY id_MonthDay
+                    ORDER BY id_MonthDay";
+                
+                Console.WriteLine($"\nRAディレクトリ内の全てのid_MonthDayの値を確認します...");
+                using (var checkCommand = new DuckDB.NET.Data.DuckDBCommand(checkAllQuery, connection))
+                using (var checkReader = checkCommand.ExecuteReader())
                 {
-                    if (line.StartsWith("RA") && line.Length > 30)
+                    while (checkReader.Read())
                     {
-                        // レコード種別IDを確認（RA）
-                        var recordSpec = line.Substring(0, 2);
-                        if (recordSpec == "RA")
+                        var monthDay = checkReader.GetString(0);
+                        var count = checkReader.GetInt64(1);
+                        Console.WriteLine($"  id_MonthDay='{monthDay}', count={count}");
+                        
+                        // 目的の日付が含まれているか確認
+                        if (monthDay == monthDayFilter)
                         {
-                            // 開催年月日: 11-18 (8桁)
-                            var recordDate = line.Substring(11, 8);
-                            if (recordDate == opts.TargetDate)
+                            Console.WriteLine($"    → 目的の日付が見つかりました！");
+                        }
+                    }
+                }
+                
+                // 指定日のレースを検索
+                Console.WriteLine($"\n{targetDate}のレースを検索します...");
+                var query = $@"
+                    SELECT DISTINCT id_JyoCD, id_RaceNum, id_MonthDay
+                    FROM read_parquet('{parquetPath}/**/*.parquet')
+                    WHERE id_MonthDay = '{monthDayFilter}'
+                    ORDER BY id_JyoCD, id_RaceNum";
+                
+                Console.WriteLine($"実行クエリ: {query}");
+                
+                using var command = new DuckDB.NET.Data.DuckDBCommand(query, connection);
+                using var reader = command.ExecuteReader();
+                
+                int recordCount = 0;
+                while (reader.Read())
+                {
+                    var jyoCD = reader.GetString(0);      // id_JyoCD
+                    var raceNumStr = reader.GetString(1); // id_RaceNum
+                    var monthDay = reader.GetString(2);   // id_MonthDay
+                    
+                    Console.WriteLine($"  レース発見: JyoCD={jyoCD}, RaceNum={raceNumStr}, MonthDay={monthDay}");
+                    
+                    if (int.TryParse(raceNumStr, out int raceNum))
+                    {
+                        races.Add((jyoCD, raceNum));
+                        Console.WriteLine($"    → レース追加: {targetDate} {jyoCD} {raceNum}R");
+                        recordCount++;
+                    }
+                }
+                Console.WriteLine($"\n検索完了。合計{recordCount}件のレコードを処理しました。");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\nParquetファイル読み取りエラー: {ex.Message}");
+                Console.WriteLine($"エラー型: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"内部エラー: {ex.InnerException.Message}");
+                }
+                Console.WriteLine($"スタックトレース: {ex.StackTrace}");
+                Console.WriteLine("\nフォールバック: rawファイルから読み取りを試みます...");
+                    
+                    // フォールバック: rawファイルから読み取り
+                    var rawDir = Path.Combine(opts.DatabasePath, "stored", "raw");
+                    if (Directory.Exists(rawDir))
+                    {
+                        var rawFiles = Directory.GetFiles(rawDir, "JV-*.txt");
+                        Console.WriteLine($"rawファイル数: {rawFiles.Length}");
+                        
+                        foreach (var rawFile in rawFiles)
+                        {
+                            try
                             {
-                                // 場コード: 19-20 (2桁)
-                                var jyoCD = line.Substring(19, 2);
-                                // レース番号: 23-24 (2桁)
-                                var raceNumStr = line.Substring(23, 2).Trim();
-                                if (!string.IsNullOrEmpty(raceNumStr) && int.TryParse(raceNumStr, out int raceNum))
+                                using var reader = new StreamReader(rawFile, Encoding.GetEncoding(932));
+                                string? line;
+                                while ((line = reader.ReadLine()) != null)
                                 {
-                                    var race = (jyoCD, raceNum);
-                                    if (!races.Contains(race))
+                                    if (line.StartsWith("RA") && line.Length > 30)
                                     {
-                                        races.Add(race);
+                                        // レコード種別IDを確認（RA）
+                                        var recordSpec = line.Substring(0, 2);
+                                        if (recordSpec == "RA")
+                                        {
+                                            // 開催年月日: 11-18 (8桁)
+                                            if (line.Length > 18)
+                                            {
+                                                var recordDate = line.Substring(11, 8);
+                                                if (recordDate == targetDate)
+                                                {
+                                                    // 場コード: 19-20 (2桁)
+                                                    if (line.Length > 20)
+                                                    {
+                                                        var jyoCD = line.Substring(19, 2);
+                                                        // レース番号: 23-24 (2桁)
+                                                        if (line.Length > 24)
+                                                        {
+                                                            var raceNumStr = line.Substring(23, 2).Trim();
+                                                            if (!string.IsNullOrEmpty(raceNumStr) && int.TryParse(raceNumStr, out int raceNum))
+                                                            {
+                                                                var race = (jyoCD, raceNum);
+                                                                if (!races.Contains(race))
+                                                                {
+                                                                    races.Add(race);
+                                                                    Console.WriteLine($"  レース発見: {targetDate} {jyoCD} {raceNum}R");
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
+                            }
+                            catch (Exception fileEx)
+                            {
+                                Console.WriteLine($"rawファイル読み取りエラー ({rawFile}): {fileEx.Message}");
                             }
                         }
                     }
                 }
             }
-        }
         else
         {
-            Console.WriteLine($"\n{opts.TargetDate}のRAデータが見つかりません。");
-            Console.WriteLine($"確認したパス: {dayDir}");
+            Console.WriteLine($"\nRAディレクトリが見つかりません。");
+            Console.WriteLine($"確認したパス: {parquetDir}");
+            
+            // 利用可能なパーティションを表示
+            Console.WriteLine("\n利用可能なパーティション:");
+            var yearDirs = Directory.Exists(parquetDir) ? Directory.GetDirectories(parquetDir, "year=*") : Array.Empty<string>();
+            foreach (var yearDirPath in yearDirs)
+            {
+                var year = Path.GetFileName(yearDirPath);
+                Console.WriteLine($"  {year}");
+                
+                var monthDirs = Directory.GetDirectories(yearDirPath, "month=*");
+                foreach (var monthDirPath in monthDirs.Take(3)) // 最初の3ヶ月のみ表示
+                {
+                    var month = Path.GetFileName(monthDirPath);
+                    Console.WriteLine($"    {month}");
+                }
+                if (monthDirs.Length > 3)
+                {
+                    Console.WriteLine($"    ... 他 {monthDirs.Length - 3} ヶ月");
+                }
+            }
+            
             return 1;
         }
         
         if (races.Count == 0)
         {
-            Console.WriteLine($"\n{opts.TargetDate}のレースが見つかりません。");
+            Console.WriteLine($"\n{targetDate}のレースが見つかりません。");
             Console.WriteLine("RAデータが存在するか、指定した日付が正しいか確認してください。");
+            
             return 1;
         }
         
-        // 場コードごとにグループ化
-        var jyoGroups = races.GroupBy(r => r.JyoCD).OrderBy(g => g.Key);
+        // 場コードごとにグループ化（中央競馬のみ）
+        var jyoGroups = races
+            .Where(r => int.TryParse(r.JyoCD, out int jyoNum) && jyoNum >= 1 && jyoNum <= 10)
+            .GroupBy(r => r.JyoCD)
+            .OrderBy(g => g.Key);
         
         Console.WriteLine($"\n開催場数: {jyoGroups.Count()}");
         foreach (var group in jyoGroups)
@@ -946,7 +1180,7 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
         }
         
         // 2. 各場のレースデータを取得
-        var outputDir = Path.Combine(opts.DatabasePath, "realtime", "raw");
+        var outputDir = Path.Combine(opts.DatabasePath, "odds", "raw");
         Directory.CreateDirectory(outputDir);
         
         foreach (var jyoGroup in jyoGroups)
@@ -957,7 +1191,7 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
             Console.WriteLine($"\n[{GetJyoName(jyoCD)}] {opts.DataSpec}データを取得中...");
             
             // レースキーを生成
-            var keys = raceNums.Select(num => $"{opts.TargetDate}{jyoCD}{num:00}").ToList();
+            var keys = raceNums.Select(num => $"{targetDate}{jyoCD}{num:00}").ToList();
             
             var downloadArgs = new[]
             {
@@ -984,12 +1218,12 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
         {
             Console.WriteLine($"\n{rtFiles.Length}個のファイルをParquet形式に変換中...");
             
-            var parquetOutputDir = Path.Combine(opts.DatabasePath, "realtime", "parquet");
+            var parquetOutputDir = Path.Combine(opts.DatabasePath, "odds", "parquet");
             int convertedCount = 0;
             
             foreach (var file in rtFiles)
             {
-                var result = await RunJVParquetAsync(file, parquetOutputDir, Array.Empty<string>());
+                var result = await RunJVDuckDBAsync(file, parquetOutputDir, Array.Empty<string>());
                 if (result == 0)
                 {
                     convertedCount++;
@@ -999,7 +1233,8 @@ static async Task<int> RunFetchOddsAsync(FetchOddsOptions opts)
             Console.WriteLine($"変換完了: {convertedCount}/{rtFiles.Length}");
         }
         
-        Console.WriteLine($"\n{opts.TargetDate}のオッズデータ取得が完了しました。");
+        Console.WriteLine($"\n{targetDate}のオッズデータ取得が完了しました。");
+        Console.WriteLine($"保存先: {Path.Combine(opts.DatabasePath, "odds")}");
         return 0;
     }
     catch (Exception ex)
@@ -1015,7 +1250,7 @@ static string GetJyoName(string jyoCD)
     return jyoCD switch
     {
         "01" => "札幌",
-        "02" => "函館",
+        "02" => "函館", 
         "03" => "福島",
         "04" => "新潟",
         "05" => "東京",
@@ -1274,8 +1509,14 @@ namespace JVDatabase
         [Option('p', "path", Required = false, Default = "./jvdb", HelpText = "データベースのパス")]
         public string DatabasePath { get; set; } = "./jvdb";
         
-        [Option('d', "date", Required = true, HelpText = "対象日 (YYYYMMDD形式)")]
+        [Option('d', "date", Required = false, HelpText = "対象日 (YYYYMMDD形式)")]
         public string TargetDate { get; set; } = "";
+        
+        [Option("start-date", Required = false, HelpText = "開始日 (YYYYMMDD形式)")]
+        public string StartDate { get; set; } = "";
+        
+        [Option("end-date", Required = false, HelpText = "終了日 (YYYYMMDD形式)")]
+        public string EndDate { get; set; } = "";
         
         [Option('s', "spec", Required = false, Default = "0B41", HelpText = "データ種別（0B11:票数時系列、0B12:払戻金時系列、0B15:レース結果、0B30:馬体重、0B31:単複枠最終オッズ、0B32:馬連最終オッズ、0B33:ワイド最終オッズ、0B34:馬単最終オッズ、0B35:三連複最終オッズ、0B36:三連単最終オッズ、0B41:単複枠時系列オッズ、0B42:馬連時系列オッズ）")]
         public string DataSpec { get; set; } = "0B41";

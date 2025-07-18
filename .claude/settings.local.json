@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(cut:*)",
+      "Bash(dotnet build)",
+      "Bash(dotnet build:*)",
+      "Bash(git checkout:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(for f in h1.py h6.py hc.py hn.py hr.py hs.py hy.py)",
+      "Bash(do echo \"=== $f ===\")",
+      "Bash(done)",
+      "Bash(for:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet test:*)",
+      "Bash(cp:*)",
+      "Bash(dotnet search:*)",
+      "Bash(dir:*)",
+      "Bash(uv run:*)",
+      "Bash(msbuild:*)",
+      "Bash(dotnet msbuild:*)",
+      "Bash(mkdir:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet remove:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(csc:*)",
+      "Bash(mv:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(cmd /c:*)",
+      "Bash(xcopy:*)",
+      "Bash(powershell:*)",
+      "Bash(cat:*)",
+      "Bash(parquet-tools schema:*)",
+      "Bash(python:*)"
+    ],
+    "deny": []
+  }
+}

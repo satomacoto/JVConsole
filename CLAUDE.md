@@ -1,65 +1,103 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイドラインを提供します。
 
-## Build Commands
+## プロジェクト概要
 
-### JVDownloader (.NET Framework 4.8)
+JVConsoleは、JRA-VAN競馬データを処理するための複数のコンポーネントで構成されるソリューションです：
+
+| プロジェクト | フレームワーク | 目的 |
+|---------|-----------|---------|
+| JVDownloader | .NET Framework 4.8 | COM相互運用を使用してJRA-VANデータラボからデータをダウンロード |
+| JVParser | .NET 6.0 | JVデータファイルを解析してJSONL形式に変換 |
+| JVDatabase | .NET 8.0 | JVデータのデータベース操作 |
+| JVDuckDB | .NET 8.0 | データ分析のためのDuckDB統合 |
+| JVParquet | .NET 8.0 | Parquetファイル形式のサポート |
+
+## ビルドコマンド
+
+### .NET Frameworkプロジェクト
 ```bash
-# Debug build
+# JVDownloader
 msbuild JVDownloader/JVDownloader.csproj /p:Configuration=Debug
-
-# Release build
 msbuild JVDownloader/JVDownloader.csproj /p:Configuration=Release
 ```
 
-### JVParser (.NET 6.0)
+### .NET Core/5+プロジェクト
 ```bash
-# Build
+# 全プロジェクトのビルド
+dotnet build
+
+# 個別プロジェクトのビルド
 dotnet build JVParser/JVParser.csproj
+dotnet build JVDatabase/JVDatabase.csproj
+dotnet build JVDuckDB/JVDuckDB.csproj
+dotnet build JVParquet/JVParquet.csproj
 
-# Run with arguments
+# 引数付きで実行
 dotnet run --project JVParser/JVParser.csproj [input_file] [output_dir]
-
-# Build release version
-dotnet build JVParser/JVParser.csproj -c Release
+dotnet run --project JVDatabase/JVDatabase.csproj [args]
+dotnet run --project JVDuckDB/JVDuckDB.csproj [args]
 ```
 
-## Architecture Overview
+## アーキテクチャ詳細
 
-This solution consists of two console applications for working with JRA-VAN horse racing data:
+### データフロー
+1. **JVDownloader** → バイナリ競馬データをテキストファイルとしてダウンロード (`JV-{spec}-{timestamp}.txt`)
+2. **JVParser** → バイナリ構造を解析し、レコードタイプごとのJSONLファイルを出力
+3. **JVDatabase/JVDuckDB/JVParquet** → さらなる処理と分析
 
-### JVDownloader
-- **Purpose**: Downloads horse racing data from JRA-VAN Data Lab service via COM interop
-- **Framework**: .NET Framework 4.8 (required for COM compatibility with JVDTLabLib)
-- **Key Components**:
-  - `Program.cs`: Entry point with three main commands:
-    - `setup`: Initial JRA-VAN setup
-    - `jv`: Download data with date range (e.g., `jv -s 20241201 -e 20241231 -spec RACE`)
-    - `jvrt`: Real-time data download
-  - `Logger.cs`: Comprehensive error code mapping for JV-Link API responses
-  - Progress form for download status visualization
-  - Outputs text files in format: `JV-{spec}-{timestamp}.txt`
+### 主要コンポーネント
 
-### JVParser
-- **Purpose**: Parses JV data files and converts to JSONL format
-- **Framework**: .NET 6.0
-- **Key Components**:
-  - `JVData_Struct.cs`: Data structures matching JV binary format (contains over 30 record types)
-  - `RecordSpecStreamWriterManager.cs`: Manages output streams, creating separate JSONL files per record type
-  - `OutputFileAlreadyExistsException.cs`: Custom exception for file handling
-  - Outputs JSONL files organized by record specification (e.g., `RA.jsonl`, `SE.jsonl`)
+#### JVDownloader
+- `Program.cs`: エントリーポイント（コマンド: `setup`, `jv`, `jvrt`）
+- `Logger.cs`: JV-Link APIエラーコードマッピング
+- WindowsおよびJRA-VANデータラボソフトウェアが必要
 
-### Data Flow
-1. JVDownloader connects to JRA-VAN servers using COM interop
-2. Downloads binary race data and saves as text files
-3. JVParser reads these text files and parses the binary structures
-4. Converts each record to JSON and outputs to specification-specific JSONL files
+#### JVParser
+- `JVData_Struct.cs`: 30以上のレコードタイプ定義
+- `RecordSpecStreamWriterManager.cs`: 出力ストリーム管理
+- 出力: `RA.jsonl`, `SE.jsonl` など
 
-## Important Notes
+#### JVDatabase/JVDuckDB/JVParquet
+- 最新のデータ処理機能
+- 様々なデータベースとファイル形式のサポート
 
-- **No test framework**: This project lacks unit tests. When adding new functionality, consider implementing tests manually
-- **COM dependency**: JVDownloader requires Windows and JRA-VAN Data Lab software installed
-- **Multi-framework**: The solution uses both .NET Framework 4.8 and .NET 6.0 for compatibility reasons
-- **Data structures**: JV data format is complex with many record types defined in `JVData_Struct.cs`
-- **Error handling**: Logger.cs contains comprehensive JV-Link error codes that should be referenced when debugging download issues
+## 開発ガイドライン
+
+### 言語設定
+- 常に日本語で応答する
+- 技術的なコミュニケーションは明確かつ簡潔に
+
+### Python開発
+- Pythonのコードは jv-python 以下でuvをつかって動かして
+
+### テストデータ管理
+
+テストデータは以下のルールに従って管理：
+
+1. **命名規則**: `test_`で始まるディレクトリ名を使用
+2. **推奨構造**:
+   ```
+   {Project}/
+   └── test_output/     # 各プロジェクト用のテスト出力
+   ```
+3. **自動除外**: `.gitignore`で以下が除外されます
+   - `test_*/`, `**/test_*/`
+   - `jvdb*/`, `**/jvdb*/`
+   - `nul`, `**/nul`
+
+### 重要な制約事項
+
+- **テストフレームワークなし**: テストは手動で実装する必要があります
+- **COM依存**: JVDownloaderはWindows環境が必要
+- **マルチフレームワーク**: .NET Frameworkと.NET Core/5+の混在
+- **複雑なデータ形式**: `JVData_Struct.cs`で定義されたバイナリ構造
+
+## テストと検証
+
+機能をテストする際：
+1. 指定されたテストディレクトリ（`test_*`）を使用
+2. 変更後にlint/typecheckコマンドを実行
+3. 適切なツールでデータの整合性を検証
+4. 完了後にテストデータをクリーンアップ

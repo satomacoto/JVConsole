@@ -5,6 +5,25 @@ using JVDuckDB;
 // Shift-JISを使用可能にする
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
+// テストモード（TestEncodingクラスが存在しない場合はコメントアウト）
+// if (args.Length > 0 && args[0] == "--test-encoding")
+// {
+//     TestEncoding.TestJVDataEncoding();
+//     return 0;
+// }
+
+// Parquet読み込みモード
+if (args.Length > 0 && args[0] == "--read-parquet")
+{
+    if (args.Length < 2)
+    {
+        Console.WriteLine("使用方法: JVDuckDB --read-parquet <parquetファイルパス>");
+        return 1;
+    }
+    ReadParquet.ReadRAParquet(args[1]);
+    return 0;
+}
+
 // コマンドライン引数の解析と実行
 return await Parser.Default.ParseArguments<ConvertOptions>(args)
     .MapResult(
@@ -20,7 +39,8 @@ static async Task<int> RunConvertAsync(ConvertOptions opts)
         Console.WriteLine($"出力: {opts.OutputPath}");
         
         // プロセッサーの作成と実行
-        var processor = new JVDuckDB.JVDuckDBProcessor(opts);
+        // Directモードを使用（重複排除なし、高速処理）
+        var processor = new JVDuckDB.JVDuckDBProcessorDirect(opts);
         await processor.ProcessAsync();
         
         Console.WriteLine("変換が完了しました。");

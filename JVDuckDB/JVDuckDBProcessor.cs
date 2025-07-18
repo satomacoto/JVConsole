@@ -29,21 +29,17 @@ namespace JVDuckDB
             {
                 // 1. 入力ファイルの取得
                 var inputFiles = GetInputFiles();
-                Console.WriteLine($"処理対象ファイル数: {inputFiles.Length}");
 
                 // 2. 各ファイルを処理
                 foreach (var (file, index) in inputFiles.Select((f, i) => (f, i)))
                 {
-                    Console.WriteLine($"\n[{index + 1}/{inputFiles.Length}] 処理中: {Path.GetFileName(file)}");
                     await ProcessFileAsync(connection, file);
                 }
 
                 // 3. 重複排除とParquet出力
-                Console.WriteLine("\n重複排除とParquet出力を開始します...");
                 await DeduplicateAndExportAsync(connection);
 
                 // 4. インデックステーブルの作成
-                Console.WriteLine("\nインデックステーブルを作成中...");
                 await CreateIndexTableAsync(connection);
 
                 // 結果サマリー
@@ -119,7 +115,7 @@ namespace JVDuckDB
                 {
                     if (_options.Verbose)
                     {
-                        Console.WriteLine($"  警告: 行 {lineCount} のパースに失敗しました: {ex.Message}");
+                        // パースエラーは無視
                     }
                 }
             }
@@ -269,7 +265,7 @@ namespace JVDuckDB
                     // 未実装のレコード種別は基本情報のみ
                     if (_options.Verbose)
                     {
-                        Console.WriteLine($"  情報: レコード種別 {recordSpec} の詳細パースは未実装です");
+                        // 未実装メッセージは無視
                     }
                     break;
             }
@@ -482,9 +478,7 @@ namespace JVDuckDB
 
             if (_options.Verbose)
             {
-                Console.WriteLine($"  挿入SQL: {insertSql}");
-                Console.WriteLine($"  カラム数: {columns.Count}");
-                Console.WriteLine($"  カラム: {string.Join(", ", columns)}");
+                // SQLログは無視
             }
 
             using var cmd = connection.CreateCommand();
@@ -510,7 +504,7 @@ namespace JVDuckDB
 
             if (_options.Verbose)
             {
-                Console.WriteLine($"  {recordSpec}: {records.Count}件を書き込みました（合計: {_recordCounts[recordSpec]}件）");
+                // 書き込み結果は無視
             }
         }
 
@@ -563,7 +557,6 @@ namespace JVDuckDB
                     cmd.CommandText = dedupSql;
                     await cmd.ExecuteNonQueryAsync();
 
-                    Console.WriteLine($"{recordSpec}: {_recordCounts[recordSpec]}件 → 重複排除後: ");
                 }
                 else
                 {
@@ -592,7 +585,6 @@ namespace JVDuckDB
                 countCmd.CommandText = $"SELECT COUNT(*) FROM {dedupedTable}";
                 var outputCount = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
                 
-                Console.WriteLine($"{recordSpec}: {_recordCounts[recordSpec]}件 → 重複排除後: {outputCount}件");
             }
         }
 
@@ -691,14 +683,7 @@ namespace JVDuckDB
 
         private void PrintSummary()
         {
-            Console.WriteLine("\n=== 処理完了 ===");
-            Console.WriteLine($"総レコード数: {_totalRecords:N0}");
-            Console.WriteLine("\nレコード種別ごとの件数:");
-            foreach (var kvp in _recordCounts.OrderBy(x => x.Key))
-            {
-                Console.WriteLine($"  {kvp.Key}: {kvp.Value:N0}件");
-            }
-            Console.WriteLine($"\n出力先: {_options.OutputPath}");
+            // サマリー表示は無視
         }
 
         private void ParseHNRecord(byte[] bytes, Dictionary<string, object?> record)

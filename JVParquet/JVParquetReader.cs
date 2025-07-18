@@ -38,38 +38,20 @@ namespace JVParquet
         {
             try
             {
-                Console.WriteLine($"Reading Parquet file: {filePath}");
-                Console.WriteLine(new string('-', 80));
 
                 using var fileStream = File.OpenRead(filePath);
                 using var parquetReader = await ParquetReader.CreateAsync(fileStream);
 
-                // ファイルのメタデータを表示
-                Console.WriteLine($"Row Groups: {parquetReader.RowGroupCount}");
+                // ファイルのメタデータ
+                var rowGroupCount = parquetReader.RowGroupCount;
                 
-                // カスタムメタデータを表示
-                if (parquetReader.CustomMetadata != null && parquetReader.CustomMetadata.Count > 0)
-                {
-                    Console.WriteLine("\nCustom Metadata:");
-                    foreach (var kvp in parquetReader.CustomMetadata)
-                    {
-                        Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
-                    }
-                }
-                Console.WriteLine();
+                // カスタムメタデータ
+                var customMetadata = parquetReader.CustomMetadata;
 
-                // スキーマ情報を表示
+                // スキーマ情報
                 var schema = parquetReader.Schema;
-                Console.WriteLine("Schema:");
-                foreach (var field in schema.GetDataFields())
-                {
-                    Console.WriteLine($"  {field.Name} ({field.ClrType.Name})");
-                }
-                Console.WriteLine();
 
-                // データを読み込んで表示
-                Console.WriteLine($"First {maxRows} rows:");
-                Console.WriteLine(new string('-', 80));
+                // データを読み込み
 
                 int rowsRead = 0;
                 for (int i = 0; i < parquetReader.RowGroupCount && rowsRead < maxRows; i++)
@@ -88,16 +70,13 @@ namespace JVParquet
                     int rowCount = columns.First().Value.Length;
                     int rowsToDisplay = Math.Min(rowCount, maxRows - rowsRead);
 
-                    // 各行を表示
+                    // 行データの処理
                     for (int row = 0; row < rowsToDisplay; row++)
                     {
-                        Console.WriteLine($"Row {rowsRead + row + 1}:");
                         foreach (var col in columns)
                         {
                             var value = col.Value.GetValue(row);
-                            Console.WriteLine($"  {col.Key}: {value ?? "null"}");
                         }
-                        Console.WriteLine();
                     }
 
                     rowsRead += rowsToDisplay;
@@ -105,8 +84,6 @@ namespace JVParquet
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading Parquet file: {ex.Message}");
-                Console.WriteLine(ex.StackTrace);
             }
         }
 
@@ -127,7 +104,6 @@ namespace JVParquet
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading Parquet schema: {ex.Message}");
             }
 
             return columns;
@@ -135,8 +111,6 @@ namespace JVParquet
 
         public static async Task AnalyzeParquetDirectoryAsync(string directory, string recordSpec = "CK")
         {
-            Console.WriteLine($"# {recordSpec}レコードの分析");
-            Console.WriteLine(new string('=', 80));
 
             var parquetFiles = Directory.GetFiles(directory, "*.parquet", SearchOption.AllDirectories)
                 .Where(f => f.Contains($"/{recordSpec}/") || f.Contains($"\\{recordSpec}\\"))
@@ -144,21 +118,16 @@ namespace JVParquet
             
             if (parquetFiles.Length == 0)
             {
-                Console.WriteLine($"No Parquet files found for record spec {recordSpec}");
                 return;
             }
 
             var file = parquetFiles.First();
-            Console.WriteLine($"\nファイル: {Path.GetFileName(file)}");
             
             var columns = await GetParquetColumnsAsync(file);
             
             // Python定義のindex_colsとの対応を分析
             if (RecordIndexMapping.ContainsKey(recordSpec))
             {
-                Console.WriteLine("\n## インデックスカラムの対応");
-                Console.WriteLine("| Python定義 | Parquetカラム名 | 存在 |");
-                Console.WriteLine("|------------|----------------|------|");
                 
                 var pythonIndexCols = RecordIndexMapping[recordSpec];
                 foreach (var pyCol in pythonIndexCols)
@@ -166,7 +135,7 @@ namespace JVParquet
                     // 完全一致を探す
                     if (columns.Contains(pyCol))
                     {
-                        Console.WriteLine($"| {pyCol} | {pyCol} | ✓ |");
+                        // 完全一致
                     }
                     else
                     {
@@ -174,7 +143,7 @@ namespace JVParquet
                         var underscored = pyCol.Replace(".", "_");
                         if (columns.Contains(underscored))
                         {
-                            Console.WriteLine($"| {pyCol} | {underscored} | ✓ |");
+                            // アンダースコア変換でマッチ
                         }
                         else
                         {
@@ -182,32 +151,20 @@ namespace JVParquet
                             var similarColumn = FindSimilarColumn(pyCol, columns);
                             if (similarColumn != null)
                             {
-                                Console.WriteLine($"| {pyCol} | {similarColumn} | ✓ |");
+                                // 類似カラムでマッチ
                             }
                             else
                             {
-                                Console.WriteLine($"| {pyCol} | - | ✗ |");
+                                // マッチなし
                             }
                         }
                     }
                 }
             }
             
-            // 実際のカラムを表示
-            Console.WriteLine($"\n## 実際のカラム（最初の30個）");
-            int index = 1;
-            foreach (var col in columns.Take(30))
-            {
-                Console.WriteLine($"{index}. `{col}`");
-                index++;
-            }
-            
-            if (columns.Count > 30)
-            {
-                Console.WriteLine($"\n... 他 {columns.Count - 30} カラム");
-            }
-            
-            Console.WriteLine();
+            // 実際のカラム情報
+            var displayColumns = columns.Take(30);
+            var remainingCount = Math.Max(0, columns.Count - 30);
         }
 
         private static string? FindSimilarColumn(string pythonCol, List<string> parquetColumns)

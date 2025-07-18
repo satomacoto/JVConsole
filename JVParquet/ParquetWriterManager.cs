@@ -94,7 +94,6 @@ namespace JVParquet
             }
 
             context.RecordCount += records.Count;
-            Console.WriteLine($"Written {records.Count} records to {recordSpec} (Total: {context.RecordCount})");
         }
 
         private async Task<WriterContext> GetOrCreateWriterContextAsync(string recordSpec, Dictionary<string, object?> sampleRecord)
@@ -241,11 +240,9 @@ namespace JVParquet
                 {
                     context.Writer?.Dispose();
                     context.Stream?.Dispose();
-                    Console.WriteLine($"Closed {context.FilePath} with {context.RecordCount} records");
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Error closing writer for {context.FilePath}: {ex.Message}");
                 }
             }
 
