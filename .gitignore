@@ -361,3 +361,15 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Test data directories
+test_*/
+**/test_*/
+jvdb*/
+**/jvdb*/
+nul
+**/nul
+
+# Temporary output directories
+test_output*/
+**/test_output*/
